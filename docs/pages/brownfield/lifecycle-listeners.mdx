@@ -1,0 +1,220 @@
+---
+title: Configuring lifecycle listeners
+sidebar_title: Lifecycle listeners
+description: Learn about the mechanism that allows Expo modules API to hook into the lifecycle of your App.
+---
+
+import { Collapsible } from '~/ui/components/Collapsible';
+import { ContentSpotlight } from '~/ui/components/ContentSpotlight';
+import { Terminal, DiffBlock } from '~/ui/components/Snippet';
+import { Step } from '~/ui/components/Step';
+import { Tabs, Tab } from '~/ui/components/Tabs';
+import { PlatformTag } from '~/ui/components/Tag/PlatformTag';
+
+Some of the Expo libraries need to handle system events (deep links, push notifications, configuration changes, etc.) by implementing `AppDelegate` or `Activity/Application` lifecycle callbacks.
+
+The Expo Modules API provides a easy way to manage such callbacks:
+
+- iOS: ExpoAppDelegate forwards AppDelegate calls to registered subscribers (Swift classes implementing ExpoAppDelegateSubscriber).
+
+- Android: Modules can provide ReactActivityLifecycleListener and ApplicationLifecycleListener implementations via a Package class so those callbacks are automatically wired.
+
+Using these mechanisms means modules can register behavior without asking you to edit many native entry points repeatedly.
+
+Modify your `AppDelegate` to extend ExpoAppDelegate or invoke the ExpoAppDelegateSubscriberManager class directly
+
+## Configuring your native project
+
+## Android — Activity & Application lifecycle listeners
+
+### When to use
+
+Use Android lifecycle listeners to hook into `Activity` and `Application` callbacks (e.g., deep links, configuration changes, app startup) without requiring app authors to modify `MainActivity` or `MainApplication` manually.
+
+### How it works (high level)
+
+- In your Android module, implement the `expo.modules.core.interfaces.Package` interface to register lifecycle listeners.
+- Provide one or more `ReactActivityLifecycleListener` instances from `createReactActivityLifecycleListeners(...)` to observe `Activity`-level events.
+- Provide one or more `ApplicationLifecycleListener` instances from `createApplicationLifecycleListeners(...)` to observe `Application`-level events.
+- Expo's runtime installs these listeners and forwards lifecycle callbacks from the app's `ReactActivity`/`Application` to all registered listeners.
+
+### Supported callbacks
+
+**Activity** listeners (`ReactActivityLifecycleListener`) currently support:
+
+- `onCreate`
+- `onResume`
+- `onPause`
+- `onDestroy`
+- `onNewIntent`
+- `onBackPressed`
+
+**Application** listeners (`ApplicationLifecycleListener`) currently support:
+
+- `onCreate`
+- `onConfigurationChanged`
+
+(Only override the methods you need — interfaces use default methods for forward compatibility.)
+
+### Get started — minimal examples
+
+**MyLibPackage.kt**
+
+```kotlin
+package expo.modules.mylib
+
+import android.content.Context
+import expo.modules.core.interfaces.Package
+import expo.modules.core.interfaces.ReactActivityLifecycleListener
+
+class MyLibPackage : Package {
+  override fun createReactActivityLifecycleListeners(activityContext: Context): List<ReactActivityLifecycleListener> {
+    return listOf(MyLibReactActivityLifecycleListener())
+  }
+}
+```
+
+**MyLibReactActivityLifecycleListener.kt**
+
+```kotlin
+package expo.modules.mylib
+
+import android.app.Activity
+import android.os.Bundle
+import expo.modules.core.interfaces.ReactActivityLifecycleListener
+
+class MyLibReactActivityLifecycleListener : ReactActivityLifecycleListener {
+  override fun onCreate(activity: Activity, savedInstanceState: Bundle?) {
+    // Setup code that would normally live in Activity.onCreate
+    doSomeSetupInActivityOnCreate(activity)
+  }
+}
+```
+
+**Application listener (Kotlin)**
+
+```kotlin
+package expo.modules.mylib
+
+import android.app.Application
+import expo.modules.core.interfaces.ApplicationLifecycleListener
+
+class MyLibApplicationLifecycleListener : ApplicationLifecycleListener {
+  override fun onCreate(application: Application) {
+    // Setup code that would normally live in Application.onCreate
+    doSomeSetupInApplicationOnCreate(application)
+  }
+}
+```
+
+### Lifecycle listeners → JavaScript event flow (pattern)
+
+A common pattern to bridge native lifecycle events to JS:
+
+1. The lifecycle listener captures a system event (intent, deep link, configuration change).
+2. The listener (often a singleton) notifies a module instance using an observer pattern or weak references (to avoid memory leaks).
+3. The module sends structured events to JavaScript (via the module event emitter API).
+4. On the JS side, provide a small hook or listener utility for app developers to consume those events.
+
+This separation keeps lifecycle listeners independent of module instances while allowing event bridging to JS safely.
+
+---
+
+## Known issues & gotchas
+
+- **iOS — Objective-C not supported**: AppDelegate subscribers are implemented in Swift and Objective-C classes are not supported as subscribers.
+- **Android — no `onStart` / `onStop`**: The listeners hook into `ReactActivityDelegate` rather than `MainActivity` directly; since `ReactActivityDelegate` doesn't expose `onStart`/`onStop`, those callbacks are not currently supported.
+- **Interface stability**: Listener interfaces may grow between Expo SDK releases. They use Java 8 default methods; implement only the methods you need to reduce maintenance costs.
+
+---
+
+## Practical tips
+
+- Prefer registering small, focused listeners that only implement the lifecycle methods they need.
+- Use weak references or observer patterns for communicating between singleton listeners and module instances to avoid memory leaks.
+- Test combined behavior when multiple modules subscribe to the same callback (especially iOS methods that return values or have completion handlers).
+
+---
+
+## iOS — AppDelegate subscribers (Swift)
+
+A easy way integrate AppDelegate subscribers is to update your AppDelegate to inherit from ExpoAppDelegate (provided by ExpoModulesCore).
+
+e.g.
+
+```diff AppDelegate.swift
++import Expo
+
+@main
+-public class AppDelegate: NSObject, UIApplicationDelegate {
++public class AppDelegate: ExpoAppDelegate {
+```
+
+### When to use
+
+Use AppDelegate subscribers when you need to observe or handle iOS `UIApplicationDelegate` events such as incoming URLs, notifications, app state transitions, or continuing user activities — without requiring the app author to edit `AppDelegate` by hand.
+
+### Requirements
+
+- The host app's `AppDelegate` must inherit from `ExpoAppDelegate` (this is required for Expo Modules to forward events to subscribers).
+- Subscribers must be implemented in **Swift** as subclasses of `ExpoAppDelegateSubscriber`. Objective-C subscribers are not supported.
+- Register the subscriber class name in the module's `expo-module.config.json` under `apple.appDelegateSubscribers` and run `pod install` so the generated provider wires it up.
+
+### Get started — minimal example
+
+**AppLifecycleDelegate.swift**
+
+```swift
+import ExpoModulesCore
+
+public class AppLifecycleDelegate: ExpoAppDelegateSubscriber {
+  public func applicationDidBecomeActive(_ application: UIApplication) {
+    // App became active
+  }
+
+  public func applicationWillResignActive(_ application: UIApplication) {
+    // App will resign active
+  }
+
+  public func applicationDidEnterBackground(_ application: UIApplication) {
+    // App entered background
+  }
+
+  public func applicationWillEnterForeground(_ application: UIApplication) {
+    // App will enter foreground
+  }
+
+  public func applicationWillTerminate(_ application: UIApplication) {
+    // App will terminate
+  }
+}
+```
+
+**expo-module.config.json** (module root)
+
+```json
+{
+  "apple": {
+    "appDelegateSubscribers": ["AppLifecycleDelegate"]
+  }
+}
+```
+
+After `pod install`, a generated `ExpoModulesProvider.swift` in the app project will include your subscriber and Expo's `ExpoAppDelegate` forwards events to all subscribers.
+
+### Result values & merged semantics
+
+Some delegate methods return values or call completion handlers. When multiple subscribers exist, `ExpoAppDelegate` reconciles results to provide the final response expected by the system:
+
+- For boolean-returning delegates like `application(_:didFinishLaunchingWithOptions:) -> Bool`, the aggregated result is `true` if _any_ subscriber returns `true` (this avoids dropping handling when one subscriber needs to claim the event).
+- For methods with completion handlers (e.g., remote notification fetch completion), `ExpoAppDelegate` passes a separate completion to each subscriber, waits for all to complete, then merges results in priority order (e.g., `failed` > `newData` > `noData`) to call the original completion with a sensible final value.
+
+> Note: Not all `UIApplicationDelegate` methods that could cause significant side effects are supported. Check the Expo source (ExpoAppDelegate.swift) for the full list of forwarded methods if you need to rely on a specific delegate.
+
+## Test your integration
+
+You have completed all the basic steps to integrate React Native with your application. Now run the following command in the React Native directory to start the [Metro bundler](https://metrobundler.dev/)
+
+<Terminal cmd={['$ yarn start']} />
+
+Metro builds your TypeScript application code into a bundle, serves it through its HTTP server, and shares the bundle from `localhost` on your developer environment to a simulator or device, allowing for [hot reloading](https://reactnative.dev/blog/2016/03/24/introducing-hot-reloading). Now you can build and run your app as normal. Once you reach your React-powered Activity inside the app, it should load the JavaScript code from the development server.
