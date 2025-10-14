@@ -176,7 +176,6 @@ const getCustomMaestroFlowsAsync = async (
     ignore.push('**/*.android.yaml');
   }
 
-  // TODO add param to this
   const yamlFiles = await glob('**/*.yaml', {
     cwd: e2eDir,
     ignore,
