@@ -12,6 +12,7 @@
 - Allow specifying user-defined headers for all routes ([#40173](https://github.com/expo/expo/pull/40173) by [@hassankhan](https://github.com/hassankhan))
 - popToTop when tapping active bottom tab on web ([#40174](https://github.com/expo/expo/pull/40174) by [@juliesaia](https://github.com/juliesaia))
 - Add selected option to labelStyle and iconColor in NativeTabs container ([#40155](https://github.com/expo/expo/pull/40155) by [@Ubax](https://github.com/Ubax)
+- Optional split view layout support ([#39563](https://github.com/expo/expo/pull/39563) by [@Ubax](https://github.com/Ubax))
 
 ### 🐛 Bug fixes
 
