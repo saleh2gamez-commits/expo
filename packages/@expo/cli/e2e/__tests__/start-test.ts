@@ -94,7 +94,9 @@ describe('server', () => {
   const expo = createExpoStart();
 
   beforeEach(async () => {
-    expo.options.cwd = await setupTestProjectWithOptionsAsync('basic-start', 'with-blank');
+    expo.options.cwd = await setupTestProjectWithOptionsAsync('basic-start', 'with-blank', {
+      linkExpoPackages: ['expo'],
+    });
     await fs.promises.rm(path.join(projectRoot, '.expo'), { force: true, recursive: true });
     await expo.startAsync();
   });
