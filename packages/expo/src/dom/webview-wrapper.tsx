@@ -3,7 +3,7 @@ import React from 'react';
 import { AppState } from 'react-native';
 
 import { getBaseURL } from './base';
-import type { BridgeMessage, WebViewProps, WebViewRef, DOMProps } from './dom.types';
+import type { BridgeMessage, DOMProps, WebViewProps, WebViewRef } from './dom.types';
 import { _emitGlobalEvent } from './global-events';
 import {
   getInjectBodySizeObserverScript,
@@ -67,7 +67,7 @@ const RawWebView = React.forwardRef<object, Props>((props, ref) => {
   const webView = resolveWebView(dom?.useExpoDOMWebView ?? false);
   const webviewRef = React.useRef<WebViewRef>(null);
   const domImperativeHandlePropsRef = React.useRef<string[]>([]);
-  const source = { uri: overrideUri ??`${getBaseURL()}/${filePath}` };
+  const source = { uri: overrideUri ?? `${getBaseURL()}/${filePath}` };
   const [containerStyle, setContainerStyle] = React.useState<WebViewProps['containerStyle']>(null);
 
   const { debugZeroHeightStyle, debugOnLayout } = useDebugZeroHeight(dom);
