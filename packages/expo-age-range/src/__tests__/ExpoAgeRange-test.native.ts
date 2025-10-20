@@ -6,7 +6,7 @@ describe('ExpoAgeRange', () => {
       ExpoAgeRange.requestAgeRangeAsync({
         threshold1: 18,
       })
-    ).resolves.toEqual({
+    ).resolves.toMatchObject({
       lowerBound: 18,
       activeParentalControls: [],
     });

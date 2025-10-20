@@ -9,6 +9,10 @@ export type AgeRangeRequest = {
   threshold3?: number;
 };
 
+/**
+ * @platform android
+ * @platform ios
+ * */
 export type AgeRangeResponse = {
   lowerBound?: number;
   upperBound?: number;
@@ -20,6 +24,15 @@ export type AgeRangeResponse = {
    * @platform ios
    * */
   activeParentalControls: string[];
+
+  /**
+   * @platform android
+   * */
+  installId: string;
+  /**
+   * @platform android
+   * */
+  userStatus: string;
 };
 
 /**
