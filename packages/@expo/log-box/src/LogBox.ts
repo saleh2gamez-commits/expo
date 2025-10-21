@@ -95,13 +95,10 @@ function consoleErrorMiddleware(...args: Parameters<typeof console.error>): void
     return;
   }
 
+  // NOTE: Should this be used for native apps as well, we need to interpolate the message.
+  // See the original LogBox implementation in React Native for reference.
   // NOTE: Unlike React Native, we'll just pass the logs directly to the console
   originalConsoleError?.(...args);
-
-  // Interpolate the message so they are formatted for adb and other CLIs.
-  // This is different than the message.content above because it includes component stacks.
-  // const interpolated = parseInterpolation(args);
-  // originalConsoleError?.(interpolated.message.content);
 
   LogBoxData.addLog({
     // Always show the static rendering issues as full screen since they
