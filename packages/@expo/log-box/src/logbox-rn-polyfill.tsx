@@ -6,7 +6,7 @@ import * as LogBoxData from 'react-native/Libraries/LogBox/Data/LogBoxData';
 // @ts-ignore
 import RCTModalHostView from 'react-native/Libraries/Modal/RCTModalHostViewNativeComponent';
 // @ts-ignore
-import type LogBoLog from 'react-native/Libraries/LogBox/Data/LogBoxLog';
+import type LogBoxLog from 'react-native/Libraries/LogBox/Data/LogBoxLog';
 import LogBoxPolyfillDOM from './logbox-dom-polyfill';
 import { getBaseUrl } from './utils/devServerEndpoints';
 
