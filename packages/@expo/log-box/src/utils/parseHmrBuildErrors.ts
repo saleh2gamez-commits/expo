@@ -9,7 +9,7 @@ import {
  * being passed to LogBox.addException (check for MetroErrorType or fallback parses the object)
  * in the web runtime.
  */
-export function parseWebHmrBuildErrors(data: object): MetroBuildError {
+export function parseHmrBuildErrors(data: object): MetroBuildError {
   const message = [(data as any).type, (data as any).message].filter(Boolean).join(' ');
 
   const type: string | undefined = (data as any).type;

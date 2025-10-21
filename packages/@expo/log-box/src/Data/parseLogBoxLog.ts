@@ -106,6 +106,14 @@ export function parseInterpolation(args: readonly any[]): {
 }
 
 export function parseLogBoxException(error: ExtendedExceptionData): LogBoxLogData {
+  // NOTE(Bacon): Support newer system for formatting errors as logbox data with more data and less parsing.
+  if ('toLogBoxLogData' in error && typeof error.toLogBoxLogData === 'function') {
+    const logBoxLogData = error.toLogBoxLogData();
+    if (logBoxLogData) return logBoxLogData;
+  }
+
+  // Fallback to the old system for formatting errors as logbox data.
+  // This is used for unexpected behavior and should be reduced as much as possible.
   const message = error.originalMessage != null ? error.originalMessage : 'Unknown';
 
   const metroInternalError = message.match(METRO_ERROR_FORMAT);

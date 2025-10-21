@@ -8,7 +8,7 @@
  * Based on this but with web support:
  * https://github.com/facebook/react-native/blob/086714b02b0fb838dee5a66c5bcefe73b53cf3df/Libraries/Utilities/HMRClient.js
  */
-import { parseWebHmrBuildErrors, type MetroBuildError } from '@expo/log-box/utils';
+import { parseHmrBuildErrors, type MetroBuildError } from '@expo/log-box/utils';
 import MetroHMRClient from '@expo/metro/metro-runtime/modules/HMRClient';
 import prettyFormat, { plugins } from 'pretty-format';
 
@@ -278,7 +278,7 @@ To reconnect:
     // Fallback for resolution errors which don't return a type
     // https://github.com/facebook/metro/blob/a3fac645dc377f78bd4182ca0ca73629b2707d5b/packages/metro/src/lib/formatBundlingError.js#L65-L73
     // https://github.com/facebook/metro/pull/1487
-    const error = parseWebHmrBuildErrors(data);
+    const error = parseHmrBuildErrors(data);
 
     buildErrorQueue.add(error);
 
@@ -352,16 +352,9 @@ function showCompileError() {
     throw error;
   } else {
     const LogBox = require('react-native/Libraries/LogBox/LogBox').default;
-    LogBox.addException({
-      message: error.ansiError,
-      originalMessage: error.ansiError,
-      name: undefined,
-      componentStack: undefined,
-      stack: [],
-      id: -1,
-      isFatal: true,
-      isComponentError: false,
-    });
+    // The error is passed thru LogBox APIs directly to the parsing function.
+    // Not typesafe
+    LogBox.addException(error);
   }
 }
 

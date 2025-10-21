@@ -229,19 +229,7 @@ export function addLog(log: LogData): void {
 }
 
 export function addException(error: ExtendedExceptionData): void {
-  let logBoxData;
-
-  // NOTE(Bacon): Support newer system for formatting errors as logbox data with more data and less parsing.
-  if ('toLogBoxLogData' in error && typeof error.toLogBoxLogData === 'function') {
-    const logBoxLogData = error.toLogBoxLogData();
-    if (logBoxLogData) {
-      logBoxData = logBoxLogData;
-    }
-  }
-
-  // Fallback to the old system for formatting errors as logbox data.
-  // This is used for unexpected behavior and should be reduced as much as possible.
-  logBoxData ??= parseLogBoxException(parseUnexpectedThrownValue(error));
+  const logBoxData = parseLogBoxException(parseUnexpectedThrownValue(error));
 
   // Parsing logs are expensive so we schedule this
   // otherwise spammy logs would pause rendering.
