@@ -126,7 +126,7 @@ function List({
         }
         return d;
       });
-      return [...updatedPrev, ...newItems];
+      return [...updatedPrev, ...newItems].sort((a, b) => a.item.id - b.item.id);
     });
   }, [showCollapsed, items]);
 
@@ -218,6 +218,34 @@ export function StackTraceList({
   }
 
   const collapseTitle = getCollapseMessage(stack, !!collapsed);
+
+  // Unfortunately RN implementation ignores symbolication collapse flag and expands all frames of components stack.
+  // https://github.com/facebook/react-native/blob/93ac7db54ead26da002abebb8f987f58b6be3a1d/packages/react-native/Libraries/LogBox/Data/LogBoxLog.js#L51
+  const expandFirst = 4;
+  const stackTraceItems = stack.map((frame, index) => {
+    const { file, lineNumber } = frame;
+    const isLaunchable =
+      !isStackFileAnonymous(frame) &&
+      symbolicationStatus === 'COMPLETE' &&
+      file != null &&
+      lineNumber != null;
+    const isCollapsed =
+      type === 'component' && process.env.EXPO_DOM_HOST_OS !== 'web'
+        ? index >= expandFirst
+        : !!frame.collapse;
+    return {
+      id: index,
+      content: (
+        <StackTraceItem
+          key={index}
+          isLaunchable={isLaunchable}
+          frame={frame}
+          onPress={isLaunchable ? () => openFileInEditor(file, lineNumber) : undefined}
+        />
+      ),
+      isCollapsed,
+    };
+  });
 
   return (
     <div style={{ marginTop: 5, display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -370,28 +398,7 @@ export function StackTraceList({
       <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
         <List
           initialDelay={initialDelay}
-          // @ts-ignore TODO: fix types
-          items={stack.map((frame, index) => {
-            const { file, lineNumber } = frame;
-            const isLaunchable =
-              !isStackFileAnonymous(frame) &&
-              symbolicationStatus === 'COMPLETE' &&
-              file != null &&
-              lineNumber != null;
-
-            return {
-              id: String(index),
-              content: (
-                <StackTraceItem
-                  key={index}
-                  isLaunchable={isLaunchable}
-                  frame={frame}
-                  onPress={isLaunchable ? () => openFileInEditor(file, lineNumber) : undefined}
-                />
-              ),
-              isCollapsed: !!frame.collapse,
-            };
-          })}
+          items={stackTraceItems}
           showCollapsed={!collapsed}
           isInitial={isInitial}
         />
@@ -452,8 +459,13 @@ function getCollapseMessage(
   }, 0);
 
   if (collapsedCount === 0) {
-    return { full: 'Showing all frames', short: 'Show all' };
+    if (collapsed) {
+      return { full: 'Show all', short: 'Show all' };
+    } else {
+      return { full: 'Hide extended frames', short: 'Hide' };
+    }
   }
+
   const short = collapsed ? 'Show' : 'Hide';
 
   const framePlural = `frame${collapsedCount > 1 ? 's' : ''}`;
