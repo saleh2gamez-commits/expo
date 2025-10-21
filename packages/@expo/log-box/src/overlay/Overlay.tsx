@@ -238,7 +238,7 @@ function LogBoxContent({
   }, [scrollRef, headerBlurRef]);
 
   let codeFrames = log?.codeFrame
-    ? Object.entries(log.codeFrame).filter(([, value]) => value?.content)
+    ? (Object.entries(log.codeFrame).filter(([, value]) => value?.content) as [StackType, any][])
     : [];
 
   codeFrames = uniqueBy(
@@ -287,9 +287,22 @@ function LogBoxContent({
 
         {
           <div style={{ padding: '0 1rem', gap: 10, display: 'flex', flexDirection: 'column' }}>
-            {codeFrames.map(([key, codeFrame]) => (
-              <ErrorCodeFrame key={key} showPathsRelativeTo={serverRoot} codeFrame={codeFrame} />
-            ))}
+            {codeFrames.map(([key, codeFrame]) => {
+              // If no frame from a stack is expanded, likely no frame is from user code, let's not show the code snippet.
+              // This avoid cluttering the overlay with irrelevant code frames of node_modules and internals.
+              if (
+                log.getStackStatus(key) === 'COMPLETE' &&
+                log.getAvailableStack(key) &&
+                // If there are no frames (for example in build errors) we want to show the code frame.
+                log.getAvailableStack(key)!.length > 0 &&
+                !log.getAvailableStack(key)!.some(({ collapse }) => !collapse)
+              ) {
+                return null;
+              }
+              return (
+                <ErrorCodeFrame key={key} showPathsRelativeTo={serverRoot} codeFrame={codeFrame} />
+              );
+            })}
 
             {log.isMissingModuleError && (
               <InstallMissingModuleTerminal moduleName={log.isMissingModuleError} />
