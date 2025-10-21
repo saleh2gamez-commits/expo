@@ -6,6 +6,7 @@
       "output": "single"
     },
     "experiments": {
+      "reactCompiler": true,
       "autolinkingModuleResolution": true,
       "baseUrl": "."
     }
