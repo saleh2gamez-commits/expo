@@ -6,7 +6,24 @@ import LogBoxInspectorContainer from './logbox-dom-polyfill';
 export default () => {
   const { logs, selectedLogIndex } = useLogsFromExpoStaticError();
 
-  return <LogBoxInspectorContainer logs={logs} selectedIndex={selectedLogIndex} platform="web" />;
+  return (
+    <LogBoxInspectorContainer
+      logs={logs}
+      selectedIndex={selectedLogIndex}
+      // LogBoxData actions props
+      onDismiss={undefined}
+      onChangeSelectedIndex={undefined}
+      // Environment polyfill props
+      platform="web"
+      devServerUrl={undefined} // not needed for static error
+      // Common actions props
+      fetchTextAsync={undefined} // fallback to global fetch
+      // LogBox UI actions props
+      onMinimize={undefined}
+      onReload={() => window.location.reload()}
+      onCopyText={(text: string) => navigator.clipboard.writeText(text)}
+    />
+  );
 };
 
 function useLogsFromExpoStaticError(): ReturnType<typeof useLogs> {

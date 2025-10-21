@@ -3,34 +3,39 @@
 import React from 'react';
 
 import { ActionsContext } from './ContextActions';
-import { RuntimePlatformContext } from './ContextPlatform';
 import * as LogBoxData from './Data/LogBoxData';
 import { LogBoxLog, LogContext } from './Data/LogBoxLog';
+import { useEnvironmentVariablesPolyfill } from './environmentHelper';
+import { FetchTextAsync, setFetchText } from './fetchHelper';
 import { LogBoxInspectorContainer } from './overlay/Overlay';
 import { convertNativeToExpoLogBoxLog, convertToExpoLogBoxLog } from './utils/convertLogBoxLog';
 
 export default function LogBoxPolyfillDOM({
+  // Default is mainly used in RedBox replacement,
+  // where we won't to keep the native webview wrapper interface as minimal as possible.
+  onCopyText = (text: string) => navigator.clipboard.writeText(text),
   onMinimize,
-  onCopyText,
-  platform,
-  fetchJsonAsync,
-  reloadRuntime,
+  fetchTextAsync,
+  onReload,
   ...props
 }: {
-  onCopyText?: (text: string) => void;
-  fetchJsonAsync?: (
-    input: string,
-    init?: {
-      method?: string;
-      body?: string;
-    }
-  ) => Promise<any>;
-  reloadRuntime?: () => void;
-  platform?: string;
-  devServerUrl?: string;
-  onDismiss?: (index: number) => void;
-  onMinimize?: () => void;
-  onChangeSelectedIndex?: (index: number) => void;
+  // Environment props
+  platform: string | undefined;
+  devServerUrl: string | undefined;
+
+  // Common actions props
+  fetchTextAsync: FetchTextAsync | undefined;
+
+  // LogBox UI actions props
+  onMinimize: (() => void) | undefined;
+  onReload: (() => void) | undefined;
+  onCopyText: ((text: string) => void) | undefined;
+
+  // LogBoxData actions props
+  onDismiss: ((index: number) => void) | undefined;
+  onChangeSelectedIndex: ((index: number) => void) | undefined;
+
+  // LogBox props
   /**
    * LobBoxLogs from the JS Runtime
    */
@@ -40,50 +45,23 @@ export default function LogBoxPolyfillDOM({
    */
   nativeLogs?: any[];
   selectedIndex?: number;
+
+  // DOM props
   dom?: import('expo/dom/internal').DOMPropsInternal;
 }) {
+  useEnvironmentVariablesPolyfill(props);
   const logs = React.useMemo(() => {
     return [
       // Convert from React Native style to Expo style LogBoxLog
       ...(props.logs ?? []).map(convertToExpoLogBoxLog),
       // Convert native logs to Expo Log Box format
-      ...(props.nativeLogs ?? []).map(convertNativeToExpoLogBoxLog(platform)), // TODO: use EXPO_DOM_HOST_OS
+      ...(props.nativeLogs ?? []).map(convertNativeToExpoLogBoxLog),
     ];
-  }, [props.logs, props.nativeLogs, platform]);
+  }, [props.logs, props.nativeLogs]);
   const selectedIndex = props.selectedIndex ?? (logs && logs?.length - 1) ?? -1;
 
-  // @ts-ignore
-  globalThis.__polyfill_onCopyText = onCopyText;
-  // @ts-ignore
-  globalThis.__polyfill_platform = platform;
-
-  if (fetchJsonAsync) {
-    // @ts-ignore
-    globalThis.__polyfill_dom_fetchJsonAsync = async (
-      url: string,
-      options?: {
-        method?: string;
-        body?: string;
-      }
-    ) => {
-      const response = await fetchJsonAsync(url, options);
-      return JSON.parse(response);
-    };
-    // @ts-ignore
-    globalThis.__polyfill_dom_fetchAsync = async (
-      url: string,
-      options?: {
-        method?: string;
-        body?: string;
-      }
-    ) => {
-      return await fetchJsonAsync(url, options);
-    };
-  }
-  // @ts-ignore
-  globalThis.__polyfill_dom_reloadRuntime = reloadRuntime;
+  if (fetchTextAsync) setFetchText(fetchTextAsync);
   useViewportMeta('width=device-width, initial-scale=1, viewport-fit=cover');
-  useExpoDevServerOriginPolyfill(props);
   useNativeLogBoxDataPolyfill({ logs }, props);
 
   return (
@@ -93,29 +71,11 @@ export default function LogBoxPolyfillDOM({
         isDisabled: false,
         logs,
       }}>
-      <RuntimePlatformContext platform={platform}>
-        <ActionsContext onMinimize={onMinimize}>
-          <LogBoxInspectorContainer />
-        </ActionsContext>
-      </RuntimePlatformContext>
+      <ActionsContext onMinimize={onMinimize} onReload={onReload} onCopyText={onCopyText}>
+        <LogBoxInspectorContainer />
+      </ActionsContext>
     </LogContext>
   );
-}
-
-function useExpoDevServerOriginPolyfill({
-  devServerUrl,
-}: {
-  devServerUrl?: string;
-}) {
-  if (!devServerUrl) {
-    return;
-  }
-
-  globalThis.process = globalThis.process || {};
-  globalThis.process.env = {
-    ...globalThis.process.env,
-    EXPO_DEV_SERVER_ORIGIN: devServerUrl,
-  };
 }
 
 function useNativeLogBoxDataPolyfill(

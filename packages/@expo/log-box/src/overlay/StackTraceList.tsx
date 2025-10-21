@@ -9,13 +9,13 @@ import { Pressable } from 'react-native';
 
 import { LogBoxInspectorSourceMapStatus } from './LogBoxInspectorSourceMapStatus';
 import styles from './StackTraceList.module.css';
+import { useDevServer } from '../ContextDevServer';
 import type { StackType, MetroStackFrame } from '../Data/Types';
 import {
   getStackFormattedLocation,
   isStackFileAnonymous,
   openFileInEditor,
 } from '../utils/devServerEndpoints';
-import { useDevServer } from '../ContextDevServer';
 
 function Transition({
   children,

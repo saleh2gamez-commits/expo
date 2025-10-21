@@ -8,8 +8,6 @@
 import React, { useEffect, useCallback, useMemo } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
-import { withActions } from '../ContextActions';
-import { withRuntimePlatform } from '../ContextPlatform';
 import * as LogBoxData from '../Data/LogBoxData';
 import { LogBoxLog, useLogs } from '../Data/LogBoxLog';
 import { LogBoxMessage } from '../overlay/Message';
@@ -250,7 +248,7 @@ function useRejectionHandler() {
     function onUnhandledError(ev: ErrorEvent) {
       hasError.current = true;
 
-      const error: Error & { componentStack?: string | null } | undefined | object = ev?.error;
+      const error: (Error & { componentStack?: string | null }) | undefined | object = ev?.error;
       if (!error || !(error instanceof Error) || typeof error.stack !== 'string') {
         return;
       }
@@ -280,14 +278,4 @@ function useRejectionHandler() {
   return hasError;
 }
 
-export default LogBoxData.withSubscription(
-  withRuntimePlatform(
-    withActions(ErrorToastContainer, {
-      onMinimize: () => {
-        LogBoxData.setSelectedLog(-1);
-        LogBoxData.setSelectedLog(-1);
-      },
-    }),
-    { platform: process.env.EXPO_OS ?? 'web' }
-  )
-);
+export default LogBoxData.withSubscription(ErrorToastContainer);

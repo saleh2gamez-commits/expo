@@ -1,4 +1,5 @@
 import type { CodeFrame, MetroStackFrame } from '../Data/Types';
+import { fetchTextAsync } from '../fetchHelper';
 
 export type SymbolicatedStackTrace = {
   stack: MetroStackFrame[];
@@ -26,20 +27,13 @@ export function getBaseUrl() {
   return window.location.protocol + '//' + window.location.host;
 }
 
+function fetchTextAsyncWithBase(url: string, init?: { method?: string; body?: string }) {
+  const fullUrl = new URL(url, getBaseUrl()).href;
+  return fetchTextAsync(fullUrl, init);
+}
+
 export function openFileInEditor(file: string, lineNumber: number): void {
-  const url = new URL('/open-stack-frame', getBaseUrl()).href;
-
-  // @ts-ignore
-  if (globalThis.__polyfill_dom_fetchAsync) {
-    // @ts-ignore
-    globalThis.__polyfill_dom_fetchAsync(url, {
-      method: 'POST',
-      body: JSON.stringify({ file, lineNumber }),
-    });
-    return;
-  }
-
-  fetch(url, {
+  fetchTextAsyncWithBase('/open-stack-frame', {
     method: 'POST',
     body: JSON.stringify({ file, lineNumber }),
   });
@@ -51,39 +45,18 @@ export async function fetchProjectMetadataAsync(): Promise<{
   sdkVersion: string;
 }> {
   // Dev Server implementation https://github.com/expo/expo/blob/f29b9f3715e42dca87bf3eebf11f7e7dd1ff73c1/packages/%40expo/cli/src/start/server/metro/MetroBundlerDevServer.ts#L1145
-  const url = new URL('/_expo/error-overlay-meta', getBaseUrl()).href;
-
-  // @ts-ignore
-  if (globalThis.__polyfill_dom_fetchJsonAsync) {
-    // @ts-ignore
-    return await globalThis.__polyfill_dom_fetchJsonAsync(url, {
-      method: 'GET',
-    });
-  }
-
-  const response = await fetch(url, {
+  const response = await fetchTextAsyncWithBase('/_expo/error-overlay-meta', {
     method: 'GET',
   });
-  return await response.json();
+  return JSON.parse(response);
 }
 
 async function symbolicateStackTrace(stack: MetroStackFrame[]): Promise<SymbolicatedStackTrace> {
-  const url = new URL('/symbolicate', getBaseUrl()).href;
-
-  // @ts-ignore
-  if (globalThis.__polyfill_dom_fetchJsonAsync) {
-    // @ts-ignore
-    return await globalThis.__polyfill_dom_fetchJsonAsync(url, {
-      method: 'POST',
-      body: JSON.stringify({ stack }),
-    });
-  }
-
-  const response = await fetch(url, {
+  const response = await fetchTextAsyncWithBase('/symbolicate', {
     method: 'POST',
     body: JSON.stringify({ stack }),
   });
-  return await response.json();
+  return JSON.parse(response);
 }
 
 export function formatProjectFilePath(
@@ -207,8 +180,7 @@ function ensureStackFilesHaveParams(stack: MetroStackFrame[]): MetroStackFrame[]
   const currentParams = currentSrc
     ? new URLSearchParams(currentSrc)
     : new URLSearchParams({
-        // @ts-ignore
-        platform: globalThis.__polyfill_platform ?? process.env.EXPO_OS,
+        platform: process.env.EXPO_DOM_HOST_OS ?? process.env.EXPO_OS,
         dev: String(__DEV__),
       });
 

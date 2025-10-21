@@ -10,10 +10,7 @@ import { ScrollView } from 'react-native';
 import { Ansi } from './AnsiHighlight';
 import styles from './CodeFrame.module.css';
 import type { CodeFrame as CodeFrameData } from '../Data/Types';
-import {
-  formatProjectFilePath,
-  openFileInEditor,
-} from '../utils/devServerEndpoints';
+import { formatProjectFilePath, openFileInEditor } from '../utils/devServerEndpoints';
 
 export function ErrorCodeFrame({
   showPathsRelativeTo,

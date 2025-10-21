@@ -77,14 +77,14 @@ class ExpoLogBoxController: UIViewController, ExpoLogBoxNativeActionsProtocol {
 #endif
     }
 
-    func reloadRuntime() {
+    func onReload() {
         DispatchQueue.main.async {
             RCTTriggerReloadCommandListeners("ExpoRedBoxSwap:Reload")
         }
         dismiss(animated: true)
     }
 
-    func fetchJsonAsync(url: String, method: String?, body: String?) async -> String {
+    func fetchTextAsync(url: String, method: String?, body: String?) async -> String {
         let finalMethod = method ?? "GET"
         let finalBody = body ?? ""
 

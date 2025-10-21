@@ -11,11 +11,11 @@ import { ErrorCodeFrame, Terminal } from './CodeFrame';
 import { LogBoxMessage } from './Message';
 import styles from './Overlay.module.css';
 import { useActions } from '../ContextActions';
-import { useRuntimePlatform } from '../ContextPlatform';
 import { SHOW_MORE_MESSAGE_LENGTH } from './Constants';
 import { ErrorOverlayHeader } from './Header';
 import ShowMoreButton from './ShowMoreButton';
 import { StackTraceList } from './StackTraceList';
+import { DevServerContext, useDevServer } from '../ContextDevServer';
 import * as LogBoxData from '../Data/LogBoxData';
 import { LogBoxLog, useLogs } from '../Data/LogBoxLog';
 import type { Message, LogLevel, StackType } from '../Data/Types';
@@ -23,7 +23,6 @@ import { classNames } from '../utils/classNames';
 import { getFormattedStackTrace } from '../utils/devServerEndpoints';
 
 import '../Global.css';
-import { DevServerContext, useDevServer } from '../ContextDevServer';
 
 const HEADER_TITLE_MAP: Record<LogLevel, string> = {
   error: 'Console Error',
@@ -55,7 +54,6 @@ function LogBoxInspector({
   selectedLogIndex: number;
   logs: LogBoxLog[];
 }) {
-  const { platform, isNative } = useRuntimePlatform();
   const { onMinimize: onMinimizeAction } = useActions();
   const isDismissable = !['static', 'syntax', 'resolution'].includes(log.level);
   const [closing, setClosing] = useState(false);
@@ -69,7 +67,7 @@ function LogBoxInspector({
 
   const onMinimize = useCallback(
     (cb?: () => void): void => {
-      if (isNative) {
+      if (['ios', 'android'].includes(process.env.EXPO_DOM_HOST_OS)) {
         onMinimizeAction?.();
         cb?.();
       } else {
@@ -86,15 +84,19 @@ function LogBoxInspector({
     <div
       className={[
         styles.overlay,
-        platform === 'ios' ? styles.overlayIos : null,
-        platform === 'android' ? styles.overlayAndroid : null,
-        platform === 'web' ? styles.overlayWeb : null,
+        process.env.EXPO_DOM_HOST_OS === 'ios' ? styles.overlayIos : null,
+        process.env.EXPO_DOM_HOST_OS === 'android' ? styles.overlayAndroid : null,
+        process.env.EXPO_DOM_HOST_OS === 'web' ? styles.overlayWeb : null,
       ]
         .filter(Boolean)
         .join(' ')}>
       <div
         data-expo-log-backdrop="true"
-        className={platform === 'web' ? `${styles.bg} ${closing ? styles.bgExit : ''}` : undefined}
+        className={
+          process.env.EXPO_DOM_HOST_OS === 'web'
+            ? `${styles.bg} ${closing ? styles.bgExit : ''}`
+            : undefined
+        }
         onClick={() => {
           if (isDismissable) {
             onMinimize();
@@ -104,7 +106,7 @@ function LogBoxInspector({
       <div
         className={classNames(
           styles.container,
-          platform !== 'android' && styles.containerTopRadius,
+          process.env.EXPO_DOM_HOST_OS !== 'android' && styles.containerTopRadius,
           closing && styles.containerExit
         )}>
         <LogBoxContent
@@ -190,8 +192,7 @@ function LogBoxContent({
     [log]
   );
 
-  // @ts-ignore
-  const onReload = globalThis.__polyfill_dom_reloadRuntime;
+  const { onReload, onCopyText } = useActions();
 
   const onCopy = () => {
     // Copy log to clipboard
@@ -199,11 +200,7 @@ function LogBoxContent({
 
     const componentStack = log.getAvailableStack('component');
     if (componentStack?.length) {
-      errContents.push(
-        '',
-        'Component Stack',
-        getFormattedStackTrace(componentStack, serverRoot)
-      );
+      errContents.push('', 'Component Stack', getFormattedStackTrace(componentStack, serverRoot));
     }
     const stackTrace = log.getAvailableStack('stack');
 
@@ -211,14 +208,7 @@ function LogBoxContent({
       errContents.push('', 'Call Stack', getFormattedStackTrace(stackTrace, serverRoot));
     }
 
-    // @ts-ignore
-    if (typeof __polyfill_onCopyText === 'function') {
-      // @ts-ignore
-      __polyfill_onCopyText(errContents.join('\n'));
-    } else {
-      // Fallback to the default copy function
-      navigator.clipboard.writeText(errContents.join('\n'));
-    }
+    onCopyText?.(errContents.join('\n'));
   };
   const [collapsed, setCollapsed] = useState(true);
 
@@ -302,9 +292,7 @@ function LogBoxContent({
             ))}
 
             {log.isMissingModuleError && (
-              <InstallMissingModuleTerminal
-                moduleName={log.isMissingModuleError}
-              />
+              <InstallMissingModuleTerminal moduleName={log.isMissingModuleError} />
             )}
 
             {!!log?.componentStack?.length && (
@@ -336,11 +324,7 @@ function LogBoxContent({
   );
 }
 
-function InstallMissingModuleTerminal({
-  moduleName,
-}: {
-  moduleName: string;
-}) {
+function InstallMissingModuleTerminal({ moduleName }: { moduleName: string }) {
   return <Terminal moduleName={moduleName} content={`$ npx expo install ${moduleName}`} />;
 }
 

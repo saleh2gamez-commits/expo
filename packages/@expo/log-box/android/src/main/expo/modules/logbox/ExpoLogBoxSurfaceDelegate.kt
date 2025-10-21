@@ -62,8 +62,8 @@ class ExpoLogBoxSurfaceDelegate(private val devSupportManager: DevSupportManager
 
     val webViewWrapper = ExpoLogBoxWebViewWrapper(
       actions = ExpoLogBoxWebViewWrapper.Actions(
-        reloadRuntime = ExpoLogBoxWebViewWrapper.Actions.ReloadRuntime(reloadRuntime),
-        fetchJsonAsync = ExpoLogBoxWebViewWrapper.Actions.FetchJsonAsync(fetchJsonAsync)
+        onReload = ExpoLogBoxWebViewWrapper.Actions.OnReload(onReload),
+        fetchTextAsync = ExpoLogBoxWebViewWrapper.Actions.FetchTextAsync(fetchTextAsync)
       ),
       props = mapOf(
         "platform" to "android",
@@ -92,11 +92,11 @@ class ExpoLogBoxSurfaceDelegate(private val devSupportManager: DevSupportManager
     return dialog?.isShowing == true
   }
 
-  private val reloadRuntime = {
+  private val onReload = {
     devSupportManager.handleReloadJS()
   }
 
-  private val fetchJsonAsync = {
+  private val fetchTextAsync = {
       url: String,
       method: String,
       body: String,

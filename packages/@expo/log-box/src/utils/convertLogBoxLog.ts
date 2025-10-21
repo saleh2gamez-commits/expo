@@ -66,39 +66,37 @@ export function convertToExpoLogBoxLog({
   });
 }
 
-export const convertNativeToExpoLogBoxLog =
-  (platform: string | undefined) =>
-  ({ message, stack }: any): LogBoxLog => {
-    let processedMessage = message;
-    let processedStack = stack || [];
+export function convertNativeToExpoLogBoxLog({ message, stack }: any): LogBoxLog {
+  let processedMessage = message;
+  let processedStack = stack || [];
 
-    if (processedMessage.startsWith('Unable to load script.')) {
-      // Unable to load script native JVM stack is not useful.
-      processedStack = [];
-    }
+  if (processedMessage.startsWith('Unable to load script.')) {
+    // Unable to load script native JVM stack is not useful.
+    processedStack = [];
+  }
 
-    if (platform === 'android') {
-      try {
-        const bodyIndex = processedMessage.indexOf('Body:');
-        if (bodyIndex !== -1) {
-          const originalJson = processedMessage.slice(bodyIndex + 5);
-          if (originalJson) {
-            const originalErrorResponseBody = JSON.parse(originalJson);
-            processedMessage = originalErrorResponseBody.message;
-          }
+  if (process.env.EXPO_DOM_HOST_OS === 'android') {
+    try {
+      const bodyIndex = processedMessage.indexOf('Body:');
+      if (bodyIndex !== -1) {
+        const originalJson = processedMessage.slice(bodyIndex + 5);
+        if (originalJson) {
+          const originalErrorResponseBody = JSON.parse(originalJson);
+          processedMessage = originalErrorResponseBody.message;
         }
-      } catch (e) {
-        // Ignore JSON parse errors
       }
+    } catch (e) {
+      // Ignore JSON parse errors
     }
+  }
 
-    const log = new LogBoxLog(
-      parseLogBoxException({
-        originalMessage: processedMessage,
-        stack: processedStack,
-      })
-    );
-    // Never show stack for native errors, these are typically bundling errors, component stack would lead to LogBox.
-    log.componentStack = [];
-    return log;
-  };
+  const log = new LogBoxLog(
+    parseLogBoxException({
+      originalMessage: processedMessage,
+      stack: processedStack,
+    })
+  );
+  // Never show stack for native errors, these are typically bundling errors, component stack would lead to LogBox.
+  log.componentStack = [];
+  return log;
+}

@@ -49,10 +49,13 @@ function LogBoxRNPolyfill(props: {
 
   const closeModal = (cb: () => void) => {
     setOpen(false);
-    setTimeout(cb, Platform.select({
-      ios: 500, // To allow the native modal to slide away before unmounting
-      default: 0, // Android has no animation, Web has css animation which doesn't require the delay
-    }));
+    setTimeout(
+      cb,
+      Platform.select({
+        ios: 500, // To allow the native modal to slide away before unmounting
+        default: 0, // Android has no animation, Web has css animation which doesn't require the delay
+      })
+    );
   };
 
   const onMinimize = () => closeModal(props.onMinimize);
@@ -87,8 +90,32 @@ function LogBoxRNPolyfill(props: {
         }}
         collapsable={false}>
         <LogBoxPolyfillDOM
+          selectedIndex={props.selectedIndex}
+          logs={logs}
+          // LogBoxData actions props
+          onDismiss={onDismiss}
+          onChangeSelectedIndex={props.onChangeSelectedIndex}
+          // Environment polyfill props
           platform={process.env.EXPO_OS}
           devServerUrl={getBaseUrl()}
+          // Common actions props
+          fetchTextAsync={async (input, init) => {
+            const res = await fetch(input, init);
+            return res.text();
+          }}
+          // LogBox UI actions props
+          onMinimize={onMinimize}
+          onReload={() => {
+            // NOTE: For iOS only the reload is enough, but on Android the app gets stuck on an empty black screen
+            onMinimize();
+            setTimeout(() => {
+              DevSettings.reload();
+            }, 100);
+          }}
+          onCopyText={(text: string) => {
+            Clipboard.setString(text);
+          }}
+          // DOM props
           dom={{
             useExpoDOMWebView: true,
             sourceOverride: bundledLogBoxUrl ? { uri: bundledLogBoxUrl } : undefined,
@@ -108,29 +135,6 @@ function LogBoxRNPolyfill(props: {
             bounces: true,
             overScrollMode: 'never',
           }}
-          fetchJsonAsync={async (input, init) => {
-            try {
-              const res = await fetch(input, init);
-              return await res.text();
-            } catch (e) {
-              throw e;
-            }
-          }}
-          reloadRuntime={() => {
-            // NOTE: For iOS only the reload is enough, but on Android the app gets stuck on an empty black screen
-            onMinimize();
-            setTimeout(() => {
-              DevSettings.reload();
-            }, 100);
-          }}
-          onCopyText={(text: string) => {
-            Clipboard.setString(text);
-          }}
-          onDismiss={onDismiss}
-          onMinimize={onMinimize}
-          onChangeSelectedIndex={props.onChangeSelectedIndex}
-          selectedIndex={props.selectedIndex}
-          logs={logs}
         />
       </View>
     </LogBoxWrapper>

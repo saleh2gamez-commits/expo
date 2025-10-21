@@ -28,15 +28,26 @@ export default function App() {
         </View>
       }
       <LogBoxPolyfillDOM
-        platform={process.env.EXPO_OS}
         logs={logs}
-        dom={{}}
-        fetchJsonAsync={() => Promise.reject(new Error('`fetchJsonAsync` placeholder, should never be called.'))}
-        reloadRuntime={() => { throw new Error('`reloadRuntime` placeholder, should never be called.'); }}
-        onCopyText={() => { throw new Error('`onCopyText` placeholder, should never be called.'); }}
+
+        // LogBoxData actions props
         onDismiss={() => { throw new Error("`onDismiss` placeholder, should never be called."); }}
-        onMinimize={() => { throw new Error("`onMinimize` placeholder, should never be called."); }}
         onChangeSelectedIndex={() => { throw new Error("`onChangeSelectedIndex` placeholder, should never be called."); }}
+
+        // Environment polyfill props
+        platform={process.env.EXPO_OS}
+        devServerUrl={undefined}
+
+        // Common actions props
+        fetchTextAsync={() => Promise.reject(new Error('`fetchTextAsync` placeholder, should never be called.'))}
+
+        // LogBox UI actions props
+        onMinimize={() => { throw new Error("`onMinimize` placeholder, should never be called."); }}
+        onReload={() => { throw new Error('`onReload` placeholder, should never be called.'); }}
+        onCopyText={() => { throw new Error('`onCopyText` placeholder, should never be called.'); }}
+
+        // DOM props
+        dom={{}}
       />
     </>
   );

@@ -85,10 +85,10 @@ class ExpoLogBoxWebViewWrapper(
       }
 
       when (actionId.asString) {
-        "reloadRuntime" -> {
-          actions.reloadRuntime.action()
+        "onReload" -> {
+          actions.onReload.action()
         }
-        "fetchJsonAsync" -> {
+        "fetchTextAsync" -> {
           CoroutineScope(Dispatchers.Default).launch {
             val url = when {
               args.get(0).isJsonPrimitive &&
@@ -113,7 +113,7 @@ class ExpoLogBoxWebViewWrapper(
             }
 
             if (url != null) {
-              actions.fetchJsonAsync.action(
+              actions.fetchTextAsync.action(
                 url,
                 method ?: "GET",
                 body ?: "",
@@ -194,22 +194,22 @@ class ExpoLogBoxWebViewWrapper(
   }
 
   data class Actions(
-    val reloadRuntime: ReloadRuntime,
-    val fetchJsonAsync: FetchJsonAsync
+    val onReload: OnReload,
+    val fetchTextAsync: FetchTextAsync
   ) {
     fun getNames(): Array<String> {
       return arrayOf(
-        reloadRuntime.name,
-        fetchJsonAsync.name
+        onReload.name,
+        fetchTextAsync.name
       )
     }
 
-    data class ReloadRuntime(
+    data class OnReload(
       val action: () -> Unit,
-      val name: String = "reloadRuntime"
+      val name: String = "onReload"
     )
 
-    data class FetchJsonAsync(
+    data class FetchTextAsync(
       val action: (
         url: String,
         method: String,
@@ -217,7 +217,7 @@ class ExpoLogBoxWebViewWrapper(
         onResult: (String) -> Unit,
         onFailure: (Exception) -> Unit
       ) -> Unit,
-      val name: String = "fetchJsonAsync"
+      val name: String = "fetchTextAsync"
     )
   }
 }

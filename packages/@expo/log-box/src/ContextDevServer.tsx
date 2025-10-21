@@ -1,4 +1,5 @@
-import React, { useEffect, useState, createContext, use, ReactNode  }  from 'react';
+import React, { useEffect, useState, createContext, use, ReactNode } from 'react';
+
 import { fetchProjectMetadataAsync } from './utils/devServerEndpoints';
 
 // Dev Server implementation https://github.com/expo/expo/blob/f29b9f3715e42dca87bf3eebf11f7e7dd1ff73c1/packages/%40expo/cli/src/start/server/metro/MetroBundlerDevServer.ts#L1145
@@ -26,17 +27,16 @@ interface DevServerContextType {
 
 const DevServerContextProvider = createContext<DevServerContextType | undefined>(undefined);
 
-export const DevServerContext: React.FC<{ children: ReactNode; }> = ({
-  children,
-}) => {
+export const DevServerContext: React.FC<{ children: ReactNode }> = ({ children }) => {
   const meta = useProjectMetadataFromServer();
 
   return (
-    <DevServerContextProvider value={{
-      projectRoot: meta?.projectRoot,
-      serverRoot: meta?.serverRoot,
-      sdkVersion: meta?.sdkVersion
-    }}>
+    <DevServerContextProvider
+      value={{
+        projectRoot: meta?.projectRoot,
+        serverRoot: meta?.serverRoot,
+        sdkVersion: meta?.sdkVersion,
+      }}>
       {children}
     </DevServerContextProvider>
   );

@@ -7,22 +7,22 @@ import WebKit
 import React
 
 protocol ExpoLogBoxNativeActionsProtocol {
-    func reloadRuntime() -> Void
-    func fetchJsonAsync(url: String, method: String?, body: String?) async -> String
+    func onReload() -> Void
+    func fetchTextAsync(url: String, method: String?, body: String?) async -> String
 }
 
 private class ExpoLogBoxNativeActions: ExpoLogBoxNativeActionsProtocol {
-    func reloadRuntime() -> Void {
+    func onReload() -> Void {
         fatalError()
     }
-    func fetchJsonAsync(url: String, method: String?, body: String?) async -> String {
+    func fetchTextAsync(url: String, method: String?, body: String?) async -> String {
         fatalError()
     }
-    static let reloadRuntimeName = "reloadRuntime"
-    static let fetchJsonAsyncName = "fetchJsonAsync"
+    static let onReloadName = "onReload"
+    static let fetchTextAsyncName = "fetchTextAsync"
     static let names = [
-        reloadRuntimeName,
-        fetchJsonAsyncName,
+        onReloadName,
+        fetchTextAsyncName,
     ]
 }
 
@@ -124,18 +124,18 @@ class ExpoLogBoxWebViewWrapper: NSObject, WKScriptMessageHandler {
 
             do {
                 switch actionId {
-                    case ExpoLogBoxNativeActions.reloadRuntimeName:
-                        nativeActions.reloadRuntime()
-                    case ExpoLogBoxNativeActions.fetchJsonAsyncName:
+                    case ExpoLogBoxNativeActions.onReloadName:
+                        nativeActions.onReload()
+                    case ExpoLogBoxNativeActions.fetchTextAsyncName:
                         guard let url = args[0] as? String,
                               let options = args[1] as? [String: Any] else {
-                            print("ExpoLogBox fetchJsonAsync action is missing url or options.")
+                            print("ExpoLogBox fetchTextAsync action is missing url or options.")
                             return
                         }
 
                         let method = options["method"] as? String
                         let body = options["body"] as? String
-                        let result = await nativeActions.fetchJsonAsync(url: url, method: method, body: body)
+                        let result = await nativeActions.fetchTextAsync(url: url, method: method, body: body)
                         sendReturn(result: result, uid: uid, actionId: actionId)
                     default:
                         print("Unknown native action: \(actionId)")
