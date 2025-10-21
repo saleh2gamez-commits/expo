@@ -97,7 +97,6 @@ function LogBoxRNPolyfill(props: {
           onDismiss={onDismiss}
           onChangeSelectedIndex={props.onChangeSelectedIndex}
           // Environment polyfill props
-          platform={process.env.EXPO_OS}
           devServerUrl={getBaseUrl()}
           // Common actions props
           fetchTextAsync={async (input, init) => {

@@ -20,7 +20,6 @@ export default function LogBoxPolyfillDOM({
   ...props
 }: {
   // Environment props
-  platform: string | undefined;
   devServerUrl: string | undefined;
 
   // Common actions props

@@ -2,7 +2,6 @@ import React from 'react';
 
 import { withActions } from './ContextActions';
 import * as LogBoxData from './Data/LogBoxData';
-import { setupExpoDomHostOsPolyfill } from './environmentHelper';
 import { renderInShadowRoot } from './utils/renderInShadowRoot';
 
 let currentRoot: ReturnType<typeof renderInShadowRoot> | null = null;
@@ -11,7 +10,6 @@ export function presentGlobalErrorOverlay() {
   if (currentRoot) {
     return;
   }
-  setupExpoDomHostOsPolyfill();
 
   const { LogBoxInspectorContainer } =
     require('./overlay/Overlay') as typeof import('./overlay/Overlay');
