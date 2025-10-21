@@ -8,7 +8,7 @@
 
 import React from 'react';
 
-import type { Category, CodeFrame, LogBoxLogData, Message, MetroStackFrame } from './Types';
+import type { Category, LogBoxLogData, Message, MetroStackFrame } from './Types';
 import { parseErrorStack } from '../utils/parseErrorStack';
 
 type ExceptionData = any;
@@ -133,6 +133,7 @@ export function parseLogBoxException(error: ExtendedExceptionData): LogBoxLogDat
         substitutions: [],
       },
       category: `${fileName}-${row}-${column}`,
+      extraData: error.extraData,
     };
   }
 
@@ -161,6 +162,7 @@ export function parseLogBoxException(error: ExtendedExceptionData): LogBoxLogDat
         substitutions: [],
       },
       category: `${fileName}-${row}-${column}`,
+      extraData: error.extraData,
     };
   }
 
@@ -185,6 +187,7 @@ export function parseLogBoxException(error: ExtendedExceptionData): LogBoxLogDat
         substitutions: [],
       },
       category: `${fileName}-${1}-${1}`,
+      extraData: error.extraData,
     };
   }
 
@@ -200,6 +203,7 @@ export function parseLogBoxException(error: ExtendedExceptionData): LogBoxLogDat
         substitutions: [],
       },
       category: message,
+      extraData: error.extraData,
     };
   }
 
@@ -211,6 +215,7 @@ export function parseLogBoxException(error: ExtendedExceptionData): LogBoxLogDat
       codeFrame: {},
       isComponentError: error.isComponentError,
       componentStack: componentStack != null ? parseErrorStack(componentStack) : [],
+      extraData: error.extraData,
       ...parseInterpolation([message]),
     };
   }
@@ -223,6 +228,7 @@ export function parseLogBoxException(error: ExtendedExceptionData): LogBoxLogDat
       codeFrame: {},
       isComponentError: error.isComponentError,
       componentStack: parseErrorStack(componentStack),
+      extraData: error.extraData,
       ...parseInterpolation([message]),
     };
   }
@@ -234,6 +240,7 @@ export function parseLogBoxException(error: ExtendedExceptionData): LogBoxLogDat
     stack: error.stack,
     codeFrame: {},
     isComponentError: error.isComponentError,
+    extraData: error.extraData,
     ...parseLogBoxLog([message]),
   };
 }
@@ -402,30 +409,6 @@ export function parseLogBoxLog(args: any[]): {
       content: message,
       substitutions: [],
     },
-  };
-}
-
-/**
- * Not used in Expo code, but required for matching exports with upstream.
- * https://github.com/krystofwoldrich/react-native/blob/7db31e2fca0f828aa6bf489ae6dc4adef9b7b7c3/packages/react-native/Libraries/LogBox/Data/parseLogBoxLog.js#L220
- */
-export function parseComponentStack(message: string): {
-  type: 'stack';
-  stack: readonly CodeFrame[];
-} {
-  // We removed legacy parsing since we are in control of the React version used.
-  const stack = parseErrorStack(message);
-  return {
-    type: 'stack',
-    stack: stack.map((frame) => ({
-      content: frame.methodName,
-      collapse: frame.collapse || false,
-      fileName: frame.file == null ? 'unknown' : frame.file,
-      location: {
-        column: frame.column == null ? -1 : frame.column,
-        row: frame.lineNumber == null ? -1 : frame.lineNumber,
-      },
-    })),
   };
 }
 

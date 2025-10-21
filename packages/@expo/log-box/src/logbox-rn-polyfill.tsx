@@ -5,8 +5,8 @@ import { View, DevSettings, Platform, Clipboard, type Modal as ModalInterface } 
 import * as LogBoxData from 'react-native/Libraries/LogBox/Data/LogBoxData';
 // @ts-ignore
 import RCTModalHostView from 'react-native/Libraries/Modal/RCTModalHostViewNativeComponent';
-
-import { LogBoxLog } from './Data/LogBoxLog';
+// @ts-ignore
+import type LogBoLog from 'react-native/Libraries/LogBox/Data/LogBoxLog';
 import LogBoxPolyfillDOM from './logbox-dom-polyfill';
 import { getBaseUrl } from './utils/devServerEndpoints';
 
@@ -145,7 +145,7 @@ function LogBoxInspectorContainer({
   selectedLogIndex,
   logs,
 }: {
-  logs: LogBoxLog[];
+  logs: readonly LogBoxLog[];
   selectedLogIndex: number;
   isDisabled?: boolean;
 }) {
@@ -170,7 +170,7 @@ function LogBoxInspectorContainer({
       onDismiss={handleDismiss}
       onMinimize={handleMinimize}
       onChangeSelectedIndex={handleSetSelectedLog}
-      logs={logs}
+      logs={logs as LogBoxLog[]}
       selectedIndex={selectedLogIndex}
     />
   );

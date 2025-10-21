@@ -37,6 +37,7 @@ export type LogBoxLogData = {
   codeFrame: Partial<Record<StackType, CodeFrame>>;
   isComponentError: boolean;
   isMissingModuleError?: string;
+  extraData?: Record<string, unknown>;
 };
 
 export type LogBoxLogDataLegacy = {

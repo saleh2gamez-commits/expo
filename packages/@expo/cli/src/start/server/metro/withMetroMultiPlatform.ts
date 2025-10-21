@@ -747,6 +747,18 @@ export function withExtendedResolver(
             debug('Using React Native LogBox implementation.');
           }
         }
+
+        if (normalizedPath.endsWith('react-native/Libraries/LogBox/Data/parseLogBoxLog.js')) {
+          if (env.EXPO_UNSTABLE_LOG_BOX) {
+            try {
+              const expoLogBox = doResolve('@expo/log-box/swap-rn-logbox-parser.js');
+              if (expoLogBox.type === 'sourceFile') {
+                return expoLogBox;
+              }
+            } catch {}
+          } else {
+          }
+        }
       }
 
       return result;

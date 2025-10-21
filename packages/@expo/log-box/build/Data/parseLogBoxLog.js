@@ -14,7 +14,6 @@ exports.parseInterpolation = parseInterpolation;
 exports.parseLogBoxException = parseLogBoxException;
 exports.isError = isError;
 exports.parseLogBoxLog = parseLogBoxLog;
-exports.parseComponentStack = parseComponentStack;
 const react_1 = __importDefault(require("react"));
 const parseErrorStack_1 = require("../utils/parseErrorStack");
 const BABEL_TRANSFORM_ERROR_FORMAT = /^(?:TransformError )?(?:SyntaxError: |ReferenceError: )(.*): (.*) \((\d+):(\d+)\)\n\n([\s\S]+)/;
@@ -111,6 +110,7 @@ function parseLogBoxException(error) {
                 substitutions: [],
             },
             category: `${fileName}-${row}-${column}`,
+            extraData: error.extraData,
         };
     }
     const babelTransformError = message.match(BABEL_TRANSFORM_ERROR_FORMAT);
@@ -137,6 +137,7 @@ function parseLogBoxException(error) {
                 substitutions: [],
             },
             category: `${fileName}-${row}-${column}`,
+            extraData: error.extraData,
         };
     }
     const babelCodeFrameError = message.match(BABEL_CODE_FRAME_ERROR_FORMAT);
@@ -160,6 +161,7 @@ function parseLogBoxException(error) {
                 substitutions: [],
             },
             category: `${fileName}-${1}-${1}`,
+            extraData: error.extraData,
         };
     }
     if (message.match(/^TransformError /)) {
@@ -174,6 +176,7 @@ function parseLogBoxException(error) {
                 substitutions: [],
             },
             category: message,
+            extraData: error.extraData,
         };
     }
     const componentStack = error.componentStack;
@@ -184,6 +187,7 @@ function parseLogBoxException(error) {
             codeFrame: {},
             isComponentError: error.isComponentError,
             componentStack: componentStack != null ? (0, parseErrorStack_1.parseErrorStack)(componentStack) : [],
+            extraData: error.extraData,
             ...parseInterpolation([message]),
         };
     }
@@ -195,6 +199,7 @@ function parseLogBoxException(error) {
             codeFrame: {},
             isComponentError: error.isComponentError,
             componentStack: (0, parseErrorStack_1.parseErrorStack)(componentStack),
+            extraData: error.extraData,
             ...parseInterpolation([message]),
         };
     }
@@ -205,6 +210,7 @@ function parseLogBoxException(error) {
         stack: error.stack,
         codeFrame: {},
         isComponentError: error.isComponentError,
+        extraData: error.extraData,
         ...parseLogBoxLog([message]),
     };
 }
@@ -344,26 +350,6 @@ function parseLogBoxLog(args) {
             content: message,
             substitutions: [],
         },
-    };
-}
-/**
- * Not used in Expo code, but required for matching exports with upstream.
- * https://github.com/krystofwoldrich/react-native/blob/7db31e2fca0f828aa6bf489ae6dc4adef9b7b7c3/packages/react-native/Libraries/LogBox/Data/parseLogBoxLog.js#L220
- */
-function parseComponentStack(message) {
-    // We removed legacy parsing since we are in control of the React version used.
-    const stack = (0, parseErrorStack_1.parseErrorStack)(message);
-    return {
-        type: 'stack',
-        stack: stack.map((frame) => ({
-            content: frame.methodName,
-            collapse: frame.collapse || false,
-            fileName: frame.file == null ? 'unknown' : frame.file,
-            location: {
-                column: frame.column == null ? -1 : frame.column,
-                row: frame.lineNumber == null ? -1 : frame.lineNumber,
-            },
-        })),
     };
 }
 /**
