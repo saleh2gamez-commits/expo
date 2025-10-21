@@ -61,6 +61,7 @@ class ExpoLogBoxWebViewWrapper(
     val script = """
             var process=globalThis.process||{};process.env=process.env||{};
             process.env.EXPO_DEV_SERVER_ORIGIN='$devServerOrigin';
+            window.$$${"EXPO_DOM_HOST_OS"} = 'android';
             window.$$${"EXPO_INITIAL_PROPS"} = $jsonObject;
     """.trimIndent()
 

@@ -72,6 +72,7 @@ class ExpoLogBoxWebViewWrapper: NSObject, WKScriptMessageHandler {
             var process = globalThis.process || {};
             process.env = process.env || {};
             process.env.EXPO_DEV_SERVER_ORIGIN = \(devServerOriginJsValue);
+            window.$$EXPO_DOM_HOST_OS = 'ios';
             window.$$EXPO_INITIAL_PROPS = \(initPropsStringified);
             window.ReactNativeWebView = {};
             window.ReactNativeWebView.postMessage = (message) => {
