@@ -22,7 +22,7 @@ import type { Message, LogLevel, StackType } from '../Data/Types';
 import { classNames } from '../utils/classNames';
 import { getFormattedStackTrace } from '../utils/devServerEndpoints';
 
-import '../Global.css';
+import '../global.css';
 
 const HEADER_TITLE_MAP: Record<LogLevel, string> = {
   error: 'Console Error',
