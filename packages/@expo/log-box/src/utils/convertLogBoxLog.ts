@@ -92,8 +92,14 @@ export function convertNativeToExpoLogBoxLog({ message, stack }: any): LogBoxLog
 
   const log = new LogBoxLog(
     parseLogBoxException({
+      message: processedMessage,
       originalMessage: processedMessage,
       stack: processedStack,
+      name: undefined,
+      componentStack: undefined,
+      id: -1,
+      isComponentError: false,
+      isFatal: true,
     })
   );
   // Never show stack for native errors, these are typically bundling errors, component stack would lead to LogBox.

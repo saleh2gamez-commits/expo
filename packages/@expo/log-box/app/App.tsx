@@ -6,7 +6,13 @@ import { View, Text } from 'react-native';
 
 const logs: LogBoxLog[] = [
   new LogBoxLog(parseLogBoxException({
-    originalMessage: "Test error",
+    message: "Test error",
+    originalMessage: undefined,
+    name: undefined,
+    componentStack: undefined,
+    id: -1,
+    isComponentError: false,
+    isFatal: false,
     stack: [],
   })),
 ];

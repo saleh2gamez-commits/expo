@@ -1,4 +1,4 @@
-import { MetroPackageResolutionError } from '../Data/BuildErrors';
+import { parseBabelCodeFrameError } from './metroBuildErrorsFormat';
 import { LogBoxLogDataLegacy, MetroStackFrame } from '../Data/Types';
 
 /**
@@ -28,7 +28,6 @@ export function parseWebBuildErrors({
         // Avoid using node:path to be compatible with web and RN runtime.
         file: `${projectRoot}/${error.filename}`,
         methodName: '<unknown>',
-        arguments: [],
         // TODO: Import stack
         lineNumber: error.lineNumber,
         column: error.column,
@@ -41,19 +40,30 @@ export function parseWebBuildErrors({
     typeof error.targetModuleName === 'string' &&
     'cause' in error
   ) {
-    const message = [error.type, error.message].filter(Boolean).join(' ');
+    const { codeFrame } = parseBabelCodeFrameError(error.message) || {};
+    // We are purposely not using the parsed fileName or content here
+    // because we have the original data in the error object.
+    const content = `Unable to resolve module ${error.targetModuleName}`;
 
-    const type: string | undefined = (error as any).type;
-    const errors: any[] | undefined = (error as any).errors;
-    // TODO: Use import stack here when the error is resolution based.
-    return new MetroPackageResolutionError(
-      message,
-      type,
-      errors,
-      error.originModulePath,
-      error.targetModuleName,
-      error.cause as any
-    ).toLogBoxLogDataLegacy();
+    return {
+      level: 'resolution',
+      // TODO: Add import stacks
+      stack: [],
+      isComponentError: false,
+      componentStack: [],
+      codeFrame: codeFrame
+        ? {
+            fileName: error.originModulePath,
+            location: null, // We are not given the location.
+            content: codeFrame,
+          }
+        : undefined,
+      message: {
+        content,
+        substitutions: [],
+      },
+      category: `${error.originModulePath}-${1}-${1}`,
+    };
   } else {
     stack = parseErrorStack(projectRoot, error.stack);
   }

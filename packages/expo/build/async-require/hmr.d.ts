@@ -11,7 +11,7 @@ declare const HMRClient: {
     setup(platformOrOptions: string | {
         isEnabled: boolean;
     }, bundleEntry?: string, host?: string, port?: number | string, isEnabledOrUndefined?: boolean, scheme?: string): void;
-    _onMetroError(data: unknown): void;
+    _onMetroError(error: unknown): void;
 };
 export default HMRClient;
 //# sourceMappingURL=hmr.d.ts.map

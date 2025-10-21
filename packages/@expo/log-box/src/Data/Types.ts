@@ -51,4 +51,4 @@ export type LogBoxLogDataLegacy = {
   isComponentError: boolean;
 };
 
-export type MetroStackFrame = UpstreamStackFrame & { collapse?: boolean };
+export type MetroStackFrame = Omit<UpstreamStackFrame, 'arguments'> & { collapse?: boolean };

@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.parseWebBuildErrors = parseWebBuildErrors;
-const BuildErrors_1 = require("../Data/BuildErrors");
+const metroBuildErrorsFormat_1 = require("./metroBuildErrorsFormat");
 /**
  * Called in expo/cli, the return value is injected into the static error page which is bundled
  * instead of the app when the web build fails.
@@ -17,7 +17,6 @@ function parseWebBuildErrors({ error, projectRoot, parseErrorStack, }) {
                 // Avoid using node:path to be compatible with web and RN runtime.
                 file: `${projectRoot}/${error.filename}`,
                 methodName: '<unknown>',
-                arguments: [],
                 // TODO: Import stack
                 lineNumber: error.lineNumber,
                 column: error.column,
@@ -29,11 +28,29 @@ function parseWebBuildErrors({ error, projectRoot, parseErrorStack, }) {
         'targetModuleName' in error &&
         typeof error.targetModuleName === 'string' &&
         'cause' in error) {
-        const message = [error.type, error.message].filter(Boolean).join(' ');
-        const type = error.type;
-        const errors = error.errors;
-        // TODO: Use import stack here when the error is resolution based.
-        return new BuildErrors_1.MetroPackageResolutionError(message, type, errors, error.originModulePath, error.targetModuleName, error.cause).toLogBoxLogDataLegacy();
+        const { codeFrame } = (0, metroBuildErrorsFormat_1.parseBabelCodeFrameError)(error.message) || {};
+        // We are purposely not using the parsed fileName or content here
+        // because we have the original data in the error object.
+        const content = `Unable to resolve module ${error.targetModuleName}`;
+        return {
+            level: 'resolution',
+            // TODO: Add import stacks
+            stack: [],
+            isComponentError: false,
+            componentStack: [],
+            codeFrame: codeFrame
+                ? {
+                    fileName: error.originModulePath,
+                    location: null, // We are not given the location.
+                    content: codeFrame,
+                }
+                : undefined,
+            message: {
+                content,
+                substitutions: [],
+            },
+            category: `${error.originModulePath}-${1}-${1}`,
+        };
     }
     else {
         stack = parseErrorStack(projectRoot, error.stack);

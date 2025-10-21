@@ -13,7 +13,7 @@ import resolveFrom from 'resolve-from';
 import { parse, StackFrame } from 'stacktrace-parser';
 import terminalLink from 'terminal-link';
 
-import { LogBoxLog } from './log-box/LogBoxLog';
+import { LogBoxLog, LogBoxLogData } from './log-box/LogBoxLog';
 import type { CodeFrame, StackFrame as MetroStackFrame } from './log-box/LogBoxSymbolication';
 import { getStackFormattedLocation } from './log-box/formatProjectFilePath';
 import { Log } from '../../../log';
@@ -254,7 +254,7 @@ function logFromError({ error, projectRoot }: { error: Error; projectRoot: strin
     projectRoot,
     parseErrorStack,
   });
-  return new LogBoxLog(data);
+  return new LogBoxLog(data as LogBoxLogData);
 }
 
 /** @returns the html required to render the static metro error as an SPA. */

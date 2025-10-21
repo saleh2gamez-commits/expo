@@ -8,7 +8,7 @@
  * Based on this but with web support:
  * https://github.com/facebook/react-native/blob/086714b02b0fb838dee5a66c5bcefe73b53cf3df/Libraries/Utilities/HMRClient.js
  */
-import { parseHmrBuildErrors, type MetroBuildError } from '@expo/log-box/utils';
+import { withoutANSIColorStyles } from '@expo/log-box/utils';
 import MetroHMRClient from '@expo/metro/metro-runtime/modules/HMRClient';
 import prettyFormat, { plugins } from 'pretty-format';
 
@@ -27,7 +27,7 @@ const prettyFormatFunc = typeof prettyFormat === 'function' ? prettyFormat : pre
 
 let hmrClient: MetroHMRClient | null = null;
 let hmrUnavailableReason: string | null = null;
-const buildErrorQueue = new Set<MetroBuildError>();
+const buildErrorQueue = new Set<unknown>();
 let didConnect: boolean = false;
 const pendingLogs: [LogLevel, any[]][] = [];
 
@@ -252,21 +252,23 @@ To reconnect:
     flushEarlyLogs();
   },
 
-  _onMetroError(data: unknown) {
+  // Related Metro error's formatting
+  // https://github.com/facebook/metro/blob/34bb8913ec4b5b02690b39d2246599faf094f721/packages/metro/src/lib/formatBundlingError.js#L36
+  _onMetroError(error: unknown) {
     if (!hmrClient) {
       return;
     }
 
-    assert(typeof data === 'object' && data != null, 'Expected data to be an object');
+    assert(typeof error === 'object' && error != null, 'Expected data to be an object');
 
     hideLoading();
 
-    if ('type' in data) {
-      if (data.type === 'GraphNotFoundError') {
+    if ('type' in error) {
+      if (error.type === 'GraphNotFoundError') {
         hmrClient.close();
         setHMRUnavailableReason('Expo CLI has restarted since the last edit. Reload to reconnect.');
         return;
-      } else if (data.type === 'RevisionNotFoundError') {
+      } else if (error.type === 'RevisionNotFoundError') {
         hmrClient.close();
         setHMRUnavailableReason(
           `Expo CLI and the ${process.env.EXPO_OS} client are out of sync. Reload to reconnect.`
@@ -275,13 +277,7 @@ To reconnect:
       }
     }
 
-    // Fallback for resolution errors which don't return a type
-    // https://github.com/facebook/metro/blob/a3fac645dc377f78bd4182ca0ca73629b2707d5b/packages/metro/src/lib/formatBundlingError.js#L65-L73
-    // https://github.com/facebook/metro/pull/1487
-    const error = parseHmrBuildErrors(data);
-
     buildErrorQueue.add(error);
-
     if (hmrClient.isEnabled()) {
       showCompileError();
     }
@@ -342,19 +338,34 @@ function showCompileError() {
   // Otherwise you risk seeing a stale runtime error while a syntax error is more recent.
   // dismissGlobalErrorOverlay();
 
-  const error = buildErrorQueue.values().next().value;
+  const cause: any = buildErrorQueue.values().next().value;
   buildErrorQueue.clear();
-  if (!error) {
+  if (!cause) {
     return;
   }
 
   if (process.env.EXPO_OS === 'web') {
-    throw error;
+    throw new BuildError(cause.message, cause.type, cause.cause);
   } else {
     const LogBox = require('react-native/Libraries/LogBox/LogBox').default;
     // The error is passed thru LogBox APIs directly to the parsing function.
-    // Not typesafe
-    LogBox.addException(error);
+    // Won't log the error in devtools console
+    // (using throw would mangle the error message and print with ANSI
+    // because throw on native is processed as console.error)
+    LogBox.addException(new BuildError(cause.message, cause.type, cause.cause));
+  }
+}
+
+class BuildError extends Error {
+  public originalMessage: string;
+
+  constructor(message: string = 'Unknown Metro Error', type?: string, cause?: Error) {
+    super(message);
+    this.name = type || 'BuildError';
+    this.cause = cause;
+    this.originalMessage = [type, message].filter(Boolean).join(': ');
+    this.message = withoutANSIColorStyles(message);
+    this.stack = '';
   }
 }
 

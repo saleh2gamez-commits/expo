@@ -177,10 +177,11 @@ function ensureStackFilesHaveParams(stack: MetroStackFrame[]): MetroStackFrame[]
       ? ('src' in document.currentScript && document.currentScript.src) || null
       : null;
 
+  const platform = process.env.EXPO_DOM_HOST_OS ?? process.env.EXPO_OS;
   const currentParams = currentSrc
     ? new URLSearchParams(currentSrc)
     : new URLSearchParams({
-        platform: process.env.EXPO_DOM_HOST_OS ?? process.env.EXPO_OS,
+        ...(platform ? { platform } : undefined),
         dev: String(__DEV__),
       });
 

@@ -11,7 +11,7 @@ import { Pressable, Text, View } from 'react-native';
 import * as LogBoxData from '../Data/LogBoxData';
 import { LogBoxLog, useLogs } from '../Data/LogBoxLog';
 import { LogBoxMessage } from '../overlay/Message';
-
+import { parseUnexpectedThrownValue } from '../utils/parseUnexpectedThrownValue';
 import '../global.css';
 
 export function ErrorToastContainer() {
@@ -250,10 +250,12 @@ function useRejectionHandler() {
 
       const error: (Error & { componentStack?: string | null }) | undefined | object = ev?.error;
       if (!error || !(error instanceof Error) || typeof error.stack !== 'string') {
+        // TODO: Handle non-Error objects?
         return;
       }
+
       error.componentStack = React.captureOwnerStack();
-      LogBoxData.addException(error);
+      LogBoxData.addException(parseUnexpectedThrownValue(error));
     }
 
     function onUnhandledRejection(ev: PromiseRejectionEvent) {
@@ -261,10 +263,11 @@ function useRejectionHandler() {
 
       const reason = ev?.reason;
       if (!reason || !(reason instanceof Error) || typeof reason.stack !== 'string') {
+        // TODO: Handle non-Error objects?
         return;
       }
 
-      LogBoxData.addException(reason);
+      LogBoxData.addException(parseUnexpectedThrownValue(reason));
     }
 
     window.addEventListener('unhandledrejection', onUnhandledRejection);

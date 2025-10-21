@@ -9,16 +9,31 @@
 import React from 'react';
 
 import type { Category, LogBoxLogData, Message, MetroStackFrame } from './Types';
+import {
+  parseBabelCodeFrameError,
+  parseBabelTransformError,
+  type ParsedBuildError,
+  parseMetroError,
+} from '../utils/metroBuildErrorsFormat';
 import { parseErrorStack } from '../utils/parseErrorStack';
 
-type ExceptionData = any;
-
-const BABEL_TRANSFORM_ERROR_FORMAT =
-  /^(?:TransformError )?(?:SyntaxError: |ReferenceError: )(.*): (.*) \((\d+):(\d+)\)\n\n([\s\S]+)/;
-const BABEL_CODE_FRAME_ERROR_FORMAT =
-  /^(?:TransformError )?(?:.*):? (?:.*?)([/|\\].*): ([\s\S]+?)\n([ >]{2}[\d\s]+ \|[\s\S]+|\u{001b}[\s\S]+)/u;
-const METRO_ERROR_FORMAT =
-  /^(?:(?:InternalError )?Metro has encountered an error:) (.*): (.*) \((\d+):(\d+)\)\n\n([\s\S]+)/u;
+type ExceptionData = {
+  message: string;
+  originalMessage: string | undefined;
+  name: string | undefined;
+  componentStack: string | undefined;
+  stack: {
+    column: number | null;
+    file: string | null;
+    lineNumber: number | null;
+    methodName: string;
+    collapse?: boolean;
+  }[];
+  id: number;
+  isFatal: boolean;
+  extraData?: Record<string, unknown>;
+  [key: string]: unknown;
+};
 
 export type ExtendedExceptionData = ExceptionData & {
   isComponentError: boolean;
@@ -106,20 +121,11 @@ export function parseInterpolation(args: readonly any[]): {
 }
 
 export function parseLogBoxException(error: ExtendedExceptionData): LogBoxLogData {
-  // NOTE(Bacon): Support newer system for formatting errors as logbox data with more data and less parsing.
-  if ('toLogBoxLogData' in error && typeof error.toLogBoxLogData === 'function') {
-    const logBoxLogData = error.toLogBoxLogData();
-    if (logBoxLogData) return logBoxLogData;
-  }
-
-  // Fallback to the old system for formatting errors as logbox data.
-  // This is used for unexpected behavior and should be reduced as much as possible.
   const message = error.originalMessage != null ? error.originalMessage : 'Unknown';
+  let parsed: ParsedBuildError | null = null;
 
-  const metroInternalError = message.match(METRO_ERROR_FORMAT);
-  if (metroInternalError) {
-    const [content, fileName, row, column, codeFrame] = metroInternalError.slice(1);
-
+  if ((parsed = parseMetroError(message))) {
+    const { content, fileName, row, column, codeFrame } = parsed;
     return {
       level: 'fatal',
       type: 'Metro Error',
@@ -130,8 +136,8 @@ export function parseLogBoxException(error: ExtendedExceptionData): LogBoxLogDat
         stack: {
           fileName,
           location: {
-            row: parseInt(row, 10),
-            column: parseInt(column, 10),
+            row,
+            column,
           },
           content: codeFrame,
         },
@@ -145,10 +151,9 @@ export function parseLogBoxException(error: ExtendedExceptionData): LogBoxLogDat
     };
   }
 
-  const babelTransformError = message.match(BABEL_TRANSFORM_ERROR_FORMAT);
-  if (babelTransformError) {
+  if ((parsed = parseBabelTransformError(message))) {
     // Transform errors are thrown from inside the Babel transformer.
-    const [fileName, content, row, column, codeFrame] = babelTransformError.slice(1);
+    const { fileName, content, row, column, codeFrame } = parsed;
 
     return {
       level: 'syntax',
@@ -159,8 +164,8 @@ export function parseLogBoxException(error: ExtendedExceptionData): LogBoxLogDat
         stack: {
           fileName,
           location: {
-            row: parseInt(row, 10),
-            column: parseInt(column, 10),
+            row,
+            column,
           },
           content: codeFrame,
         },
@@ -174,10 +179,9 @@ export function parseLogBoxException(error: ExtendedExceptionData): LogBoxLogDat
     };
   }
 
-  const babelCodeFrameError = message.match(BABEL_CODE_FRAME_ERROR_FORMAT);
-  if (babelCodeFrameError) {
-    // Codeframe errors are thrown from any use of buildCodeFrameError.
-    const [fileName, content, codeFrame] = babelCodeFrameError.slice(1);
+  if ((parsed = parseBabelCodeFrameError(message))) {
+    const { fileName, content, codeFrame } = parsed;
+
     return {
       level: 'syntax',
       stack: [],
@@ -242,7 +246,7 @@ export function parseLogBoxException(error: ExtendedExceptionData): LogBoxLogDat
   }
 
   // Most `console.error` calls won't have a componentStack. We parse them like
-  // regular logs which have the component stack burried in the message.
+  // regular logs which have the component stack buried in the message.
   return {
     level: 'error',
     stack: error.stack,

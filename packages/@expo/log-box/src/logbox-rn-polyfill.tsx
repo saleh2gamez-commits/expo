@@ -4,9 +4,10 @@ import { View, DevSettings, Platform, Clipboard, type Modal as ModalInterface } 
 // @ts-ignore
 import * as LogBoxData from 'react-native/Libraries/LogBox/Data/LogBoxData';
 // @ts-ignore
-import RCTModalHostView from 'react-native/Libraries/Modal/RCTModalHostViewNativeComponent';
-// @ts-ignore
 import type LogBoxLog from 'react-native/Libraries/LogBox/Data/LogBoxLog';
+// @ts-ignore
+import RCTModalHostView from 'react-native/Libraries/Modal/RCTModalHostViewNativeComponent';
+
 import LogBoxPolyfillDOM from './logbox-dom-polyfill';
 import { getBaseUrl } from './utils/devServerEndpoints';
 

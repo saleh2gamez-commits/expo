@@ -13,16 +13,23 @@ import type {
 } from 'react-native/Libraries/LogBox/Data/parseLogBoxLog';
 import type { ExtendedExceptionData } from 'react-native/Libraries/LogBox/LogBox';
 
-// We intentionally import from our web-specific parseLogBoxLog implementation
-// to ensure the conversion logic is correct.
+// We intentionally import from our web-specific parseLogBoxLog implementation to ensure the conversion logic is correct.
 import type { MetroStackFrame as ExpoMetroStackFrame } from './Types';
+import type { ExtendedExceptionData as ExpoExtendedExceptionData } from './parseLogBoxLog';
+// End of web-specific imports
 import * as parseLogBoxLogWeb from './parseLogBoxLog';
 import { parseErrorStack } from '../utils/parseErrorStack';
+import { withoutANSIColorStyles as withoutANSIColorStylesHelper } from '../utils/withoutANSIStyles';
 
+// Exported method must be compatible with upstream React Native.
 export { parseInterpolation } from './parseLogBoxLog';
 
+export function withoutANSIColorStyles<T>(text: T): T {
+  return withoutANSIColorStylesHelper(text);
+}
+
 export function parseLogBoxException(error: ExtendedExceptionData): LogBoxLogData {
-  const parsed = parseLogBoxLogWeb.parseLogBoxException(error);
+  const parsed = parseLogBoxLogWeb.parseLogBoxException(error as ExpoExtendedExceptionData);
   return {
     ...parsed,
     // @ts-ignore metro types only accepts undefined | number for column
@@ -107,16 +114,4 @@ function isComponentStack(consoleArgument: string) {
   const isNewJSCComponentStackFormat = RE_COMPONENT_STACK_LINE_STACK_FRAME.test(consoleArgument);
 
   return isOldComponentStackFormat || isNewComponentStackFormat || isNewJSCComponentStackFormat;
-}
-
-export function withoutANSIColorStyles(message: any): any {
-  if (typeof message !== 'string') {
-    return message;
-  }
-
-  return message.replace(
-    // eslint-disable-next-line no-control-regex
-    /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g,
-    ''
-  );
 }

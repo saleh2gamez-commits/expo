@@ -16,7 +16,6 @@ import type { LogLevel, MetroStackFrame, StackType, Category, Message } from './
 import type { ExtendedExceptionData } from './parseLogBoxLog';
 import { isError, parseLogBoxException, parseLogBoxLog } from './parseLogBoxLog';
 import { parseErrorStack } from '../utils/parseErrorStack';
-import { parseUnexpectedThrownValue } from '../utils/parseUnexpectedThrownValue';
 
 export type LogBoxLogs = Set<LogBoxLog>;
 
@@ -229,13 +228,11 @@ export function addLog(log: LogData): void {
 }
 
 export function addException(error: ExtendedExceptionData): void {
-  const logBoxData = parseLogBoxException(parseUnexpectedThrownValue(error));
-
   // Parsing logs are expensive so we schedule this
   // otherwise spammy logs would pause rendering.
   setTimeout(() => {
     try {
-      _appendNewLog(new LogBoxLog(logBoxData));
+      _appendNewLog(new LogBoxLog(parseLogBoxException(error)));
     } catch (unexpectedError: any) {
       reportUnexpectedLogBoxError(unexpectedError);
     }

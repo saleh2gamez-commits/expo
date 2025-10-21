@@ -7,7 +7,8 @@
  */
 
 import { parseErrorStack } from './parseErrorStack';
-import { MetroBuildError } from '../Data/BuildErrors';
+import { ExtendedExceptionData } from '../LogBox';
+import { withoutANSIColorStyles } from './withoutANSIStyles';
 
 /**
  * Handles the developer-visible aspect of errors and exceptions
@@ -17,8 +18,13 @@ let exceptionID = 0;
 /**
  * Logs exceptions to the (native) console and displays them
  */
-export function parseUnexpectedThrownValue(error: any) {
-  let e: Error & { componentStack?: string; jsEngine?: string; isComponentError?: boolean } = error;
+export function parseUnexpectedThrownValue(error: Error | string): ExtendedExceptionData {
+  let e: Error & {
+    componentStack?: string;
+    jsEngine?: string;
+    isComponentError?: boolean;
+    originalMessage?: string;
+  };
   if (error instanceof Error) {
     e = error;
   } else {
@@ -31,11 +37,12 @@ export function parseUnexpectedThrownValue(error: any) {
 
   const stack = parseErrorStack(e?.stack);
   const currentExceptionID = ++exceptionID;
-  // Re-apply the ansi error formatting to the message for CLI/Bundler errors such as missing imports.
-  // This ensures the console.error has ansi stripped.
-  const originalMessage = e instanceof MetroBuildError ? e.ansiError : e.message || '';
 
-  let message = originalMessage;
+  // Keep the ansi error formatting to the message for CLI/Bundler errors such as missing imports.
+  const originalMessage = e.originalMessage || e.message || '';
+
+  // This ensures the console.error has ansi stripped.
+  let message = withoutANSIColorStyles(originalMessage);
   if (e.componentStack != null) {
     message += `\n\nThis error is located at:${e.componentStack}`;
   }
@@ -48,9 +55,9 @@ export function parseUnexpectedThrownValue(error: any) {
 
   const data = {
     message,
-    originalMessage: message === originalMessage ? null : originalMessage,
-    name: e.name == null || e.name === '' ? null : e.name,
-    componentStack: typeof e.componentStack === 'string' ? e.componentStack : null,
+    originalMessage: message === originalMessage ? undefined : originalMessage,
+    name: e.name == null || e.name === '' ? undefined : e.name,
+    componentStack: typeof e.componentStack === 'string' ? e.componentStack : undefined,
     stack,
     id: currentExceptionID,
     isFatal: true,
