@@ -720,7 +720,7 @@ export function withExtendedResolver(
           }
         }
 
-        if (normal.endsWith('react-native/Libraries/Utilities/HMRClient.js')) {
+        if (normalizedPath.endsWith('react-native/Libraries/Utilities/HMRClient.js')) {
           try {
             const hmrModule = doResolve('expo/src/async-require/hmr.ts');
             if (hmrModule.type === 'sourceFile') {
@@ -732,7 +732,7 @@ export function withExtendedResolver(
           }
         }
 
-        if (normal.endsWith('react-native/Libraries/LogBox/LogBoxInspectorContainer.js')) {
+        if (normalizedPath.endsWith('react-native/Libraries/LogBox/LogBoxInspectorContainer.js')) {
           if (env.EXPO_UNSTABLE_LOG_BOX) {
             try {
               const expoLogBox = doResolve('@expo/log-box/swap-rn-logbox.js');
