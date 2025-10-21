@@ -307,80 +307,6 @@ function interpolateLikeConsole(...args: any[]) {
 export function isError(err: any): err is Error {
   return typeof err === 'object' && err !== null && 'name' in err && 'message' in err;
 }
-const REACT_STACK_BOTTOM_MARKER = 'react-stack-bottom-marker';
-const REACT_STACK_BOTTOM_MARKER_REGEX = new RegExp(
-  `(at ${REACT_STACK_BOTTOM_MARKER} )|(${REACT_STACK_BOTTOM_MARKER}\\@)`
-);
-/**
- * Extracts and processes React error details from the provided input error.
- * This function ensures that the error stack is cleaned up and includes only relevant frames.
- * It also appends the owner stack if available and tags the error for identification.
- *
- * @param inputError - The error object or any other type to process.
- * @returns A new Error object with updated stack and properties, or the original input if not an error.
- */
-function processReactErrorDetails<T = unknown>(inputError: T): Error | T {
-  const isInputErrorInstance = isError(inputError);
-
-  // Extract the original stack and message from the error.
-  const originalStack = isInputErrorInstance ? inputError.stack || '' : '';
-  const originalMessage = isInputErrorInstance ? inputError.message : '';
-
-  // Split the stack into lines for processing.
-  const stackLinesArray = originalStack.split('\n');
-
-  // Find the index of the React stack bottom marker in the stack trace.
-  const splitIndex = stackLinesArray.findIndex((line) =>
-    REACT_STACK_BOTTOM_MARKER_REGEX.test(line)
-  );
-
-  // Determine if the stack contains the React stack bottom marker.
-  const hasReactStackMarker = splitIndex >= 0;
-
-  // Update the stack to exclude frames after the React stack bottom marker.
-  const updatedStack = hasReactStackMarker
-    ? stackLinesArray.slice(0, splitIndex).join('\n')
-    : originalStack;
-
-  // Create a new Error object with the updated stack and message.
-  const updatedError = new Error(originalMessage);
-
-  // Copy all enumerable properties from the input error to the new error.
-  Object.assign(updatedError, inputError);
-
-  // Set the updated stack on the new error.
-  updatedError.stack = updatedStack;
-
-  // Append the owner stack if available.
-  appendOwnerStack(updatedError);
-
-  return updatedError;
-}
-
-/**
- * Appends the React owner stack to the provided error's stack trace.
- * This ensures that the error stack includes additional context about the React component hierarchy.
- *
- * @param error - The error object to update.
- */
-function appendOwnerStack(error: Error) {
-  // Check if React's captureOwnerStack function is available. React +19.1
-  if (!React.captureOwnerStack) {
-    return;
-  }
-
-  // Get the current stack and the owner stack.
-  let stack = error.stack || '';
-  const ownerStack = React.captureOwnerStack();
-
-  // Avoid appending duplicate owner stack frames.
-  if (ownerStack && !stack.endsWith(ownerStack)) {
-    stack += ownerStack;
-
-    // Override the stack with the updated value.
-    error.stack = stack;
-  }
-}
 
 export function parseLogBoxLog(args: any[]): {
   componentStack: MetroStackFrame[];
@@ -410,8 +336,8 @@ export function parseLogBoxLog(args: any[]): {
     // @ts-expect-error
     error.stack = error.componentStack;
   } else {
-    // If the error is a React error, process it to clean up the stack.
-    error = processReactErrorDetails(error);
+    // Try to capture owner stack now if missing.
+    error.stack = React.captureOwnerStack() || undefined;
   }
 
   return {
