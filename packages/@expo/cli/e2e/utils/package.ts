@@ -27,7 +27,15 @@ export async function createPackageTarball(fixtureRoot: string, packagePath: str
   const { stdout } = await execa(
     'npm',
     // Run `npm pack --json` without the script logging (see: https://github.com/npm/cli/issues/7354)
-    ['--foreground-scripts=false', 'pack', '--json', '--pack-destination', outputDir],
+    [
+      // for example `expo` prepare script can only run on unix systems, since the package is build is committed
+      // it should be fine to skip scripts in the e2e tests
+      '--ignore-scripts',
+      'pack',
+      '--json',
+      '--pack-destination',
+      outputDir,
+    ],
     { cwd: packageDir, stdio: boolish('CI', false) ? 'pipe' : undefined }
   );
 
