@@ -1,0 +1,126 @@
+import React, { useMemo, useState } from "react";
+import { I18nManager, SafeAreaView, View, Text, Button, FlatList, TouchableOpacity, Alert } from "react-native";
+
+I18nManager.allowRTL(true);
+
+const POINTS = { general: 5, quintet: 10, finalGoal: 3 };
+
+const makeTodayQuestions = () => {
+  const baseId = Math.floor(Date.now()/1000).toString();
+  return [
+    {
+      id: `q_general_${baseId}`,
+      type: "general",
+      typeTitle: "أسئلة عامة",
+      title: "من هو هداف دوري روشن السعودي موسم 2023/24؟",
+      options: ["كريستيانو رونالدو", "ألكسندر ميتروفيتش", "موسى ماريغا", "عبد الرزاق حمد الله"],
+      answer: ["كريستيانو رونالدو"],
+      points: POINTS.general,
+    },
+    {
+      id: `q_quintet_${baseId}`,
+      type: "quintet",
+      typeTitle: "خماسيات",
+      title: "رتّب الهلال – الاتحاد – الأهلي – النصر – الشباب (من الأعلى بطولات محلية إلى الأقل)",
+      options: ["الهلال", "الاتحاد", "الأهلي", "النصر", "الشباب"],
+      answer: ["الهلال", "النصر", "الاتحاد", "الأهلي", "الشباب"], // مثال — عدّلها لاحقًا
+      points: POINTS.quintet,
+    },
+    {
+      id: `q_final_${baseId}`,
+      type: "finalGoal",
+      typeTitle: "هدف و نهائي",
+      title: "من سجّل الهدف الحاسم في نهائي كأس الملك 2017؟",
+      options: ["عمر خربين", "سلمان الفرج", "محمد السهلاوي", "كارلوس إدواردو"],
+      answer: ["عمر خربين"],
+      points: POINTS.finalGoal,
+    },
+  ];
+};
+
+export default function App() {
+  const questions = useMemo(makeTodayQuestions, []);
+  const [answers, setAnswers] = useState({});
+  const totalPoints = Object.values(answers).reduce((s, a) => s + a.pointsAwarded, 0);
+
+  const QuestionCard = ({ q }) => {
+    const answered = answers[q.id];
+    return (
+      <View style={{ padding: 12, borderRadius: 12, backgroundColor: "#fff", marginBottom: 12 }}>
+        <Text style={{ fontSize: 16, fontWeight: "700" }}>{q.typeTitle} — {q.points} ن</Text>
+        <Text style={{ opacity: 0.8, marginTop: 6 }}>{q.title}</Text>
+        {!answered && (
+          <>
+            {q.type === "general" || q.type === "finalGoal" ? (
+              <FlatList
+                style={{ marginTop: 8 }}
+                data={q.options}
+                keyExtractor={(o) => o}
+                renderItem={({ item }) => (
+                  <TouchableOpacity onPress={() => submit(q, [item])} style={{ padding: 12, borderRadius: 10, backgroundColor: "#f6f6f6", marginBottom: 8 }}>
+                    <Text>{item}</Text>
+                  </TouchableOpacity>
+                )}
+              />
+            ) : (
+              // خماسيات (تبسيط: نعرض الترتيب المقترح كما هو؛ لاحقاً نضيف سحب/ترتيب)
+              <TouchableOpacity onPress={() => submit(q, q.options)} style={{ marginTop: 8, padding: 12, borderRadius: 10, backgroundColor: "#f6f6f6" }}>
+                <Text>إرسال الترتيب الحالي (للتجربة)</Text>
+              </TouchableOpacity>
+            )}
+          </>
+        )}
+
+        {answered && (
+          <View style={{ marginTop: 10 }}>
+            <Text style={{ fontWeight: "700", marginBottom: 4 }}>
+              {answered.isCorrect ? "إجابة صحيحة" : "إجابة خاطئة"}
+            </Text>
+            <Text>+{answered.pointsAwarded} نقاط</Text>
+            {!answered.isCorrect && (
+              <View style={{ marginTop: 6 }}>
+                <Text style={{ fontWeight: "700" }}>الإجابة الصحيحة:</Text>
+                {q.answer.map((a, idx) => (<Text key={idx}>{idx + 1}. {a}</Text>))}
+              </View>
+            )}
+          </View>
+        )}
+      </View>
+    );
+  };
+
+  const submit = (q, selected) => {
+    if (answers[q.id]) return;
+    const isCorrect = JSON.stringify(selected) === JSON.stringify(q.answer);
+    const ua = {
+      id: q.id,
+      selected,
+      isCorrect,
+      pointsAwarded: isCorrect ? q.points : 0,
+      timestamp: Date.now()
+    };
+    setAnswers(prev => ({ ...prev, [q.id]: ua }));
+    if (!isCorrect) Alert.alert("حظًا أوفر", "شوف الإجابة الصحيحة تحت.");
+  };
+
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#f0f2f5" }}>
+      <View style={{ padding: 16 }}>
+        <Text style={{ fontSize: 28, fontWeight: "800", textAlign: "center" }}>خمّن</Text>
+        <Text style={{ textAlign: "center", opacity: 0.7, marginBottom: 16 }}>تحدّيات اليوم (كرة قدم سعودية)</Text>
+
+        <FlatList
+          data={questions}
+          keyExtractor={(q) => q.id}
+          renderItem={({ item }) => <QuestionCard q={item} />}
+        />
+
+        <View style={{ padding: 12, borderRadius: 12, backgroundColor: "#e9ecef", marginTop: 8 }}>
+          <Text style={{ textAlign: "center" }}>
+            إجمالي نقاطك: <Text style={{ fontWeight: "700" }}>{totalPoints}</Text>
+          </Text>
+        </View>
+      </View>
+    </SafeAreaView>
+  );
+}
